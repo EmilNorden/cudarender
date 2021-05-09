@@ -9,6 +9,7 @@
 #include <GL/glew.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <cuda_gl_interop.h>
 
 cudaError_t cuda();
 
@@ -57,16 +58,28 @@ void launch_cudaRender(dim3 grid, dim3 block, int sbytes, unsigned int *g_odata,
     //cudaRender << < grid, block, sbytes >> >(g_odata, imgw, offset);
 }
 
-void Renderer::render(unsigned int *out_buffer, int width, int height) {
+void Renderer::render(int width, int height) {
     dim3 block(16, 16, 1);
     dim3 grid(width / block.x, height / block.y, 1);
-    cudaRender<<<grid, block, 0>>>(out_buffer, width, 0);
+    cudaRender<<<grid, block, 0>>>((unsigned int*)m_cuda_render_buffer, width, 0);
+
+    cudaArray *texture_ptr;
+    cuda_assert(cudaGraphicsMapResources(1, &m_cuda_tex_resource, 0));
+    cuda_assert(cudaGraphicsSubResourceGetMappedArray(&texture_ptr, m_cuda_tex_resource, 0, 0));
+
+    // TODO: Havent we already calculated this?
+    int num_texels = width * height;
+    int num_values = num_texels * 4;
+    int size_tex_data = sizeof(GLubyte) * num_values;
+    cuda_assert(cudaMemcpyToArray(texture_ptr, 0, 0, m_cuda_render_buffer, size_tex_data, cudaMemcpyDeviceToDevice));
+    cuda_assert(cudaGraphicsUnmapResources(1, &m_cuda_tex_resource, 0));
 }
 
-Renderer::Renderer(int width, int height)
+Renderer::Renderer(GLuint gl_texture, int width, int height)
     : m_cuda_render_buffer(nullptr) {
-
     allocate_render_buffer(width, height);
+
+    cuda_assert(cudaGraphicsGLRegisterImage(&m_cuda_tex_resource, gl_texture, GL_TEXTURE_2D, cudaGraphicsRegisterFlagsWriteDiscard));
 }
 
 void Renderer::allocate_render_buffer(int width, int height) {

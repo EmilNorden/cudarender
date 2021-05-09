@@ -6,14 +6,10 @@
 #include "shader_tools/GLSLShader.h"
 #include "gui/GlWindow.h"
 #include "renderer/renderer.cuh"
-#include "renderer/cuda_utils.cuh"
 
 // OpenGL
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
-
-// CUDA
-#include <cuda_gl_interop.h>
 
 #if defined(RENDER_DEBUG)
 #define DEBUG_ASSERT_SDL(x) {                                   \
@@ -28,9 +24,6 @@
 #define DEBUG_ASSERT_SDL(x) (x)
 #endif
 
-// GLFW
-GLFWwindow* window;
-
 // OpenGL
 GLuint VBO, VAO, EBO;
 GLSLShader drawtex_f; // GLSL fragment shader
@@ -38,16 +31,7 @@ GLSLShader drawtex_v; // GLSL fragment shader
 GLSLProgram shdrawtex; // GLSLS program for textured draw
 
 // CUDA <-> OpenGL interop
-void* cuda_dev_render_buffer;
-struct cudaGraphicsResource* cuda_tex_resource;
 GLuint opengl_tex_cuda;
-// Forward declaration of CUDA render
-void launch_cudaRender(dim3 grid, dim3 block, int sbytes, unsigned int *g_odata, int imgw, int offset);
-
-// CUDA
-size_t size_tex_data;
-unsigned int num_texels;
-unsigned int num_values;
 
 #define WIDTH   800
 #define HEIGHT  600
@@ -126,7 +110,7 @@ void check_for_gl_errors() {
     }
 }
 
-void create_gl_texture_for_cuda(GLuint* gl_tex, cudaGraphicsResource** cuda_tex, unsigned int size_x, unsigned int size_y) {
+void create_gl_texture(GLuint* gl_tex, unsigned int size_x, unsigned int size_y) {
     glGenTextures(1, gl_tex);
     glBindTexture(GL_TEXTURE_2D, *gl_tex);
 
@@ -137,7 +121,6 @@ void create_gl_texture_for_cuda(GLuint* gl_tex, cudaGraphicsResource** cuda_tex,
 
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8UI_EXT, size_x, size_y, 0, GL_RGBA_INTEGER_EXT, GL_UNSIGNED_BYTE, NULL);
 
-    cuda_assert(cudaGraphicsGLRegisterImage(cuda_tex, *gl_tex, GL_TEXTURE_2D, cudaGraphicsRegisterFlagsWriteDiscard));
     check_for_gl_errors();
 }
 
@@ -164,7 +147,7 @@ void init_glfw() {
 }
 
 void init_gl_buffers() {
-    create_gl_texture_for_cuda(&opengl_tex_cuda, &cuda_tex_resource, WIDTH, HEIGHT);
+    create_gl_texture(&opengl_tex_cuda, WIDTH, HEIGHT);
 
     drawtex_v = GLSLShader("Textured draw vertex shader", glsl_drawtex_vertshader_src, GL_VERTEX_SHADER);
     drawtex_f = GLSLShader("Textured draw fragment shader", glsl_drawtex_fragshader_src, GL_FRAGMENT_SHADER);
@@ -173,34 +156,8 @@ void init_gl_buffers() {
     check_for_gl_errors();
 }
 
-void init_cuda_buffers() {
-    num_texels = WIDTH * HEIGHT;
-    num_values = num_texels * 4;
-    size_tex_data = sizeof(GLubyte) * num_values;
-    cuda_assert(cudaMalloc(&cuda_dev_render_buffer, size_tex_data));
-}
-
-void generate_cuda_image(Renderer& renderer, int frame) {
-
-    renderer.render((unsigned int*)cuda_dev_render_buffer, WIDTH, HEIGHT);
-
-    // Copy cuda_dev_render_buffer data to the texture
-    // Map buffer objects to get CUDA device pointers
-    cudaArray *texture_ptr;
-    cuda_assert(cudaGraphicsMapResources(1, &cuda_tex_resource, 0));
-    cuda_assert(cudaGraphicsSubResourceGetMappedArray(&texture_ptr, cuda_tex_resource, 0, 0));
-
-    // TODO: Havent we already calculated this?
-    int num_texels = WIDTH * HEIGHT;
-    int num_values = num_texels * 4;
-    int size_tex_data = sizeof(GLubyte) * num_values;
-    cuda_assert(cudaMemcpyToArray(texture_ptr, 0, 0, cuda_dev_render_buffer, size_tex_data, cudaMemcpyDeviceToDevice));
-    cuda_assert(cudaGraphicsUnmapResources(1, &cuda_tex_resource, 0));
-
-}
-
 void display(Renderer& renderer, GlWindow& window, int frame) {
-    generate_cuda_image(renderer, frame);
+    renderer.render(WIDTH, HEIGHT);
     glfwPollEvents();
     glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT);
@@ -228,9 +185,8 @@ int main() {
     init_opengl();
 
     init_gl_buffers();
-    init_cuda_buffers();
 
-    Renderer rend{WIDTH, HEIGHT};
+    Renderer rend{opengl_tex_cuda, WIDTH, HEIGHT};
 
     // Generate buffers
     glGenVertexArrays(1, &VAO);

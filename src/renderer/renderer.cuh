@@ -5,17 +5,20 @@
 #ifndef RENDERER_RENDERER_H
 #define RENDERER_RENDERER_H
 
+#include <GL/glew.h>
 
 class Renderer {
 public:
-    Renderer(int width, int height);
+    Renderer(GLuint gl_texture, int width, int height);
     ~Renderer();
     Renderer(const Renderer&) = delete;
     Renderer& operator=(const Renderer&) = delete;
-    void render(unsigned int *out_buffer, int width, int height);
+    void render(int width, int height);
+    unsigned int* buffer() { return (unsigned int*)m_cuda_render_buffer; }
 private:
     void allocate_render_buffer(int width, int height);
     void* m_cuda_render_buffer;
+    struct cudaGraphicsResource* m_cuda_tex_resource;
 };
 
 
