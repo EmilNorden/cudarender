@@ -75,7 +75,7 @@ void Renderer::allocate_render_buffer(int width, int height) {
     }
 
     auto buffer_size = width * height * 4 * sizeof(GLubyte); // Is GLubyte ever larger than 1?
-    cuda_assert(cudaMalloc(&m_cuda_render_buffer, buffer_sxize));
+    cuda_assert(cudaMalloc(&m_cuda_render_buffer, buffer_size));
 }
 
 Renderer::~Renderer() {
