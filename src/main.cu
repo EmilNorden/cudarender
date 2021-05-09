@@ -4,6 +4,9 @@
 
 #include "shader_tools/GLSLProgram.h"
 #include "shader_tools/GLSLShader.h"
+#include "gui/GlWindow.h"
+#include "renderer/renderer.cuh"
+#include "renderer/cuda_utils.cuh"
 
 // OpenGL
 #include <GL/glew.h>
@@ -112,13 +115,6 @@ GLuint indices[] = {  // Note that we start from 0!
         1, 2, 3   // Second Triangle
 };
 
-void cuda_assert(cudaError_t err) {
-    if(err != cudaSuccess) {
-        std::cerr << "CUDA call failed: " << cudaGetErrorString(err) << std::endl;
-        exit(1);
-    }
-}
-
 void check_for_gl_errors() {
     while(true) {
         const GLenum err = glGetError();
@@ -153,30 +149,18 @@ void init_opengl() {
         std::cerr << "glewInit failed: " << glewGetErrorString(err) << std::endl;
         exit(1);
     }
+    glViewport(0, 0, WIDTH, HEIGHT);
+    check_for_gl_errors();
 }
 
-void keyboard_func(GLFWwindow* window, int key, int scancode, int action, int mods){
-}
+/*void keyboard_func(GLFWwindow* window, int key, int scancode, int action, int mods){
+}*/
 
 void init_glfw() {
     if(!glfwInit()) {
         std::cerr << "glfwInit failed!" << std::endl;
         exit(1);
     }
-
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
-    glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
-    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-    window = glfwCreateWindow(WIDTH, HEIGHT, "Hello, world!", NULL, NULL);
-    if(!window) {
-        std::cerr << "Unable to create window!" << std::endl;
-        glfwTerminate();
-        exit(1);
-    }
-    glfwMakeContextCurrent(window);
-    glfwSwapInterval(1);
-    glfwSetKeyCallback(window, keyboard_func);
 }
 
 void init_gl_buffers() {
@@ -196,11 +180,9 @@ void init_cuda_buffers() {
     cuda_assert(cudaMalloc(&cuda_dev_render_buffer, size_tex_data));
 }
 
-void generate_cuda_image(int frame) {
-    dim3 block(16, 16, 1);
-    dim3 grid(WIDTH / block.x, HEIGHT / block.y, 1);
+void generate_cuda_image(Renderer& renderer, int frame) {
 
-    launch_cudaRender(grid, block, 0, (unsigned int*)cuda_dev_render_buffer, WIDTH, frame);
+    renderer.render((unsigned int*)cuda_dev_render_buffer, WIDTH, HEIGHT);
 
     // Copy cuda_dev_render_buffer data to the texture
     // Map buffer objects to get CUDA device pointers
@@ -217,8 +199,8 @@ void generate_cuda_image(int frame) {
 
 }
 
-void display(int frame) {
-    generate_cuda_image(frame);
+void display(Renderer& renderer, GlWindow& window, int frame) {
+    generate_cuda_image(renderer, frame);
     glfwPollEvents();
     glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT);
@@ -235,16 +217,20 @@ void display(int frame) {
 
     check_for_gl_errors();
 
-    glfwSwapBuffers(window);
+    window.swap();
 }
 
 
 int main() {
     init_glfw();
+    GlWindow window{"Hello, world!", WIDTH, HEIGHT};
+
     init_opengl();
 
     init_gl_buffers();
     init_cuda_buffers();
+
+    Renderer rend{WIDTH, HEIGHT};
 
     // Generate buffers
     glGenVertexArrays(1, &VAO);
@@ -276,9 +262,9 @@ int main() {
     glBindVertexArray(0);
 
     int frame = 0;
-    while(!glfwWindowShouldClose(window)) {
+    while(!window.should_close()) {
         auto start = std::chrono::high_resolution_clock::now();
-        display(frame);
+        display(rend, window, frame);
         //glfwWaitEvents();
         frame++;
         auto end = std::chrono::high_resolution_clock::now();

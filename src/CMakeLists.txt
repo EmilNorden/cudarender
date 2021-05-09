@@ -3,6 +3,10 @@ set(CMAKE_CUDA_STANDARD 17)
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -DRENDER_DEBUG")
 
 add_library(renderer
+        renderer/renderer.cu
+        renderer/renderer.cuh
+        renderer/cuda_utils.cu
+        renderer/cuda_utils.cuh
         dummy.cpp
         dummy.h)
 
@@ -26,7 +30,9 @@ add_executable(renderer_bin
         main.cu
         kernel.cu
         shader_tools/GLSLProgram.cpp
-        shader_tools/GLSLShader.cpp)
+        shader_tools/GLSLShader.cpp
+        gui/GlWindow.cpp
+        gui/GlWindow.h)
 
 target_include_directories(renderer_bin PRIVATE
         # ${SDL2_INCLUDE_DIRS}
