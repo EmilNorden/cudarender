@@ -4,11 +4,10 @@
 
 #include "shader_tools/GLSLProgram.h"
 #include "shader_tools/GLSLShader.h"
-#include "gui/GlWindow.h"
+#include "gui/gl_window.h"
 #include "renderer/renderer.cuh"
 
 // OpenGL
-#include <GL/glew.h>
 #include <GLFW/glfw3.h>
 
 #if defined(RENDER_DEBUG)
@@ -25,7 +24,7 @@
 #endif
 
 // OpenGL
-GLuint VBO, VAO, EBO;
+// GLuint VBO, VAO, EBO;
 GLSLShader drawtex_f; // GLSL fragment shader
 GLSLShader drawtex_v; // GLSL fragment shader
 GLSLProgram shdrawtex; // GLSLS program for textured draw
@@ -85,6 +84,7 @@ static const char *glsl_drawtex_fragshader_src =
         "   	color = c / 255.0;\n"
         "}\n";
 
+/*
 // QUAD GEOMETRY
 GLfloat vertices[] = {
         // Positions          // Colors           // Texture Coords
@@ -98,6 +98,7 @@ GLuint indices[] = {  // Note that we start from 0!
         0, 1, 3,  // First Triangle
         1, 2, 3   // Second Triangle
 };
+*/
 
 void check_for_gl_errors() {
     while(true) {
@@ -124,21 +125,6 @@ void create_gl_texture(GLuint* gl_tex, unsigned int size_x, unsigned int size_y)
     check_for_gl_errors();
 }
 
-void init_opengl() {
-    glewExperimental = GL_TRUE; // need this to enforce core profile
-    GLenum err = glewInit();
-    glGetError();
-    if(err != GLEW_OK) {
-        std::cerr << "glewInit failed: " << glewGetErrorString(err) << std::endl;
-        exit(1);
-    }
-    glViewport(0, 0, WIDTH, HEIGHT);
-    check_for_gl_errors();
-}
-
-/*void keyboard_func(GLFWwindow* window, int key, int scancode, int action, int mods){
-}*/
-
 void init_glfw() {
     if(!glfwInit()) {
         std::cerr << "glfwInit failed!" << std::endl;
@@ -159,8 +145,7 @@ void init_gl_buffers() {
 void display(Renderer& renderer, GlWindow& window, int frame) {
     renderer.render(WIDTH, HEIGHT);
     glfwPollEvents();
-    glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
-    glClear(GL_COLOR_BUFFER_BIT);
+
 
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, opengl_tex_cuda);
@@ -168,9 +153,7 @@ void display(Renderer& renderer, GlWindow& window, int frame) {
     shdrawtex.use();
     glUniform1i(glGetUniformLocation(shdrawtex.program, "tex"), 0);
 
-    glBindVertexArray(VAO); // binding VAO automatically binds EBO
-    glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
-    glBindVertexArray(0); // unbind VAO
+    window.draw();
 
     check_for_gl_errors();
 
@@ -180,42 +163,12 @@ void display(Renderer& renderer, GlWindow& window, int frame) {
 
 int main() {
     init_glfw();
-    GlWindow window{"Hello, world!", WIDTH, HEIGHT};
 
-    init_opengl();
+    GlWindow window{"Hello, world!", WIDTH, HEIGHT};
 
     init_gl_buffers();
 
     Renderer rend{opengl_tex_cuda, WIDTH, HEIGHT};
-
-    // Generate buffers
-    glGenVertexArrays(1, &VAO);
-    glGenBuffers(1, &VBO);
-    glGenBuffers(1, &EBO);
-
-    // Buffer setup
-    glBindVertexArray(VAO);
-
-    glBindBuffer(GL_ARRAY_BUFFER, VBO);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
-
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
-
-    // Position attribute (3 floats)
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(GLfloat), (GLvoid*)0);
-    glEnableVertexAttribArray(0);
-    // Color attribute (3 floats)
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(GLfloat), (GLvoid*)(3 * sizeof(GLfloat)));
-    glEnableVertexAttribArray(1);
-    // Texture attribute (2 floats)
-    glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(GLfloat), (GLvoid*)(6 * sizeof(GLfloat)));
-    glEnableVertexAttribArray(2);
-
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
-    // Note that this is allowed, the call to glVertexAttribPointer registered VBO as the currently bound
-    // vertex buffer object so afterwards we can safely unbind
-    glBindVertexArray(0);
 
     int frame = 0;
     while(!window.should_close()) {

@@ -31,8 +31,10 @@ add_executable(renderer_bin
         kernel.cu
         shader_tools/GLSLProgram.cpp
         shader_tools/GLSLShader.cpp
-        gui/GlWindow.cpp
-        gui/GlWindow.h)
+        gui/gl_window.cpp
+        gui/gl_window.h
+        gui/glew_helper.cpp
+        gui/glew_helper.h)
 
 target_include_directories(renderer_bin PRIVATE
         # ${SDL2_INCLUDE_DIRS}
