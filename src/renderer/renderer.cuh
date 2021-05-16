@@ -7,13 +7,17 @@
 
 #include <GL/glew.h>
 
+class Camera;
+class Scene;
+
 class Renderer {
 public:
     Renderer(GLuint gl_texture, int width, int height);
     ~Renderer();
     Renderer(const Renderer&) = delete;
     Renderer& operator=(const Renderer&) = delete;
-    void render(int width, int height);
+    void render(Camera* camera, int width, int height);
+    void render(int width, int height, const Camera &camera, const Scene &scene);
     unsigned int* buffer() { return (unsigned int*)m_cuda_render_buffer; }
 private:
     void allocate_render_buffer(int width, int height);

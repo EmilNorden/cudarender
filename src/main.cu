@@ -5,10 +5,13 @@
 #include "shader_tools/GLSLProgram.h"
 #include "shader_tools/GLSLShader.h"
 #include "gui/gl_window.h"
-#include "renderer/renderer.cuh"
 
 // OpenGL
 #include <GLFW/glfw3.h>
+
+// Renderer
+#include "renderer/camera.cuh"
+#include "renderer/renderer.cuh"
 
 #if defined(RENDER_DEBUG)
 #define DEBUG_ASSERT_SDL(x) {                                   \
@@ -142,8 +145,8 @@ void init_gl_buffers() {
     check_for_gl_errors();
 }
 
-void display(Renderer& renderer, GlWindow& window, int frame) {
-    renderer.render(WIDTH, HEIGHT);
+void display(Camera* camera, Renderer& renderer, GlWindow& window, int frame) {
+    renderer.render(camera, WIDTH, HEIGHT);
     glfwPollEvents();
 
 
@@ -170,16 +173,31 @@ int main() {
 
     Renderer rend{opengl_tex_cuda, WIDTH, HEIGHT};
 
+    Camera *camera;
+    cudaMallocManaged(&camera, sizeof(Camera));
+    camera->set_position(glm::vec3(0.0, 0.0, 0.0));
+    camera->set_direction(glm::vec3(0.0, 0.0, 1.0));
+    camera->set_up(glm::vec3(0.0, 1.0, 0.0));
+    camera->set_field_of_view(75.0 * (3.1415 / 180.0));
+    camera->set_blur_radius(0.0);
+    camera->set_focal_length(1.0);
+    camera->set_shutter_speed(0.0);
+    camera->set_resolution(glm::vec2(WIDTH, HEIGHT));
+    camera->update();
+
     int frame = 0;
+    double f = 0.0;
     while(!window.should_close()) {
         auto start = std::chrono::high_resolution_clock::now();
-        display(rend, window, frame);
-        //glfwWaitEvents();
+
+        camera->set_position(glm::vec3(0.0, 0.0, glm::sin(f)*2.0));
+        camera->update();
+        display(camera, rend, window, frame);
         frame++;
         auto end = std::chrono::high_resolution_clock::now();
         auto duration = std::chrono::duration<double>(end-start);
         std::cout << "Time to render 1 frame: " << duration.count() << std::endl;
-        // std::cout << "FPS: " << (1000.0 / duration.count()) << std::endl;
+        f += duration.count();
     }
 
     int N = 1<<20;
@@ -213,6 +231,7 @@ int main() {
     // Free memory
     cudaFree(x);
     cudaFree(y);
+    cudaFree(camera);
 
     // https://stackoverflow.com/questions/14446495/cmake-project-structure-with-unit-tests
     // https://bitbucket.org/EmilNorden/physicstracer/src/master/CMakeLists.txt

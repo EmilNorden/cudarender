@@ -2,7 +2,9 @@
 // Created by emil on 2021-05-09.
 //
 
+#include "coordinates.cuh"
 #include "renderer.cuh"
+#include "camera.cuh"
 
 #include "cuda_runtime.h"
 #include "cuda_utils.cuh"
@@ -37,31 +39,91 @@ __device__ int rgbToInt(float r, float g, float b)
     return (int(b) << 16) | (int(g) << 8) | int(r);
 }
 
-__global__ void
-cudaRender(unsigned int *g_odata, int imgw, int offset)
-{
-    // extern __shared__ uchar4 sdata[];
+__device__ bool hit_sphere(const WorldSpaceRay& ray) {
+    auto radius = 2.0f;
+    auto position = glm::vec3(0.0, 0.0, 10.0);
 
+    auto squared_radius = radius*radius;
+    auto L = position - ray.origin().as_vec3();
+    auto tca = glm::dot(L, ray.direction());
+
+    auto d2 = glm::dot(L, L) - tca * tca;
+
+    if(d2 > squared_radius) {
+        return false;
+    }
+
+    auto thc = glm::sqrt(squared_radius - d2);
+    auto t0 = tca - thc;
+    auto t1 = tca + thc;
+
+    if(t0 > t1) {
+        auto temp = t0;
+        t0 = t1;
+        t1 = temp;
+    }
+
+    if(t0 < 0.0) {
+        t0 = t1;
+        if(t0 < 0.0) {
+            return false;
+        }
+    }
+
+    return true;
+}
+
+
+__global__ void
+cudaRender(unsigned int *g_odata, Camera *camera, int width, int height)
+{
     int tx = threadIdx.x;
     int ty = threadIdx.y;
     int bw = blockDim.x;
     int bh = blockDim.y;
-    int x = blockIdx.x*bw + tx + offset;
+    int x = blockIdx.x*bw + tx;
     int y = blockIdx.y*bh + ty;
 
-    uchar4 c4 = make_uchar4((x & 0x20) ? 100 : 0, 0, (y & 0x20) ? 100 : 0, 0);
-    g_odata[y*imgw + x] = rgbToInt(c4.z, c4.y, c4.x);
+    /*Camera camera;
+    camera.set_position(glm::vec3(0.0, 0.0, 0.0));
+    camera.set_direction(glm::vec3(0.0, 0.0, 1.0));
+    camera.set_up(glm::vec3(0.0, 1.0, 0.0));
+    camera.set_field_of_view(90.0 * (3.1415 / 180.0));
+    camera.set_blur_radius(0.0);
+    camera.set_focal_length(1.0);
+    camera.set_shutter_speed(0.0);
+    camera.set_resolution(glm::vec2(width, height));
+
+    camera.update();*/
+
+    //uchar4 c4 = make_uchar4((x & 0x20) ? 100 : 0, 0, (y & 0x20) ? 100 : 0, 0);
+    // g_odata[y*width + x] = rgbToInt(c4.z, c4.y, c4.x);
+
+    if(x < width && y < height) {
+        auto ray = camera->cast_ray(x, y);
+
+        auto hit = hit_sphere(ray);
+
+        auto factor_x = (x / (float)width);
+        auto factor_y = (y / (float)height);
+        if(hit) {
+            g_odata[y*width + x] = rgbToInt(factor_x * 255, 0, factor_y * 255);
+        }
+        else {
+            g_odata[y*width + x] = rgbToInt(0, 0, 0);
+        }
+
+    }
+
 }
 
-void launch_cudaRender(dim3 grid, dim3 block, int sbytes, unsigned int *g_odata, int imgw, int offset)
-{
-    //cudaRender << < grid, block, sbytes >> >(g_odata, imgw, offset);
-}
 
-void Renderer::render(int width, int height) {
+
+
+void Renderer::render(Camera* camera, int width, int height) {
     dim3 block(16, 16, 1);
-    dim3 grid(width / block.x, height / block.y, 1);
-    cudaRender<<<grid, block, 0>>>((unsigned int*)m_cuda_render_buffer, width, 0);
+    dim3 grid(width / block.x, std::ceil(height / (float)block.y), 1);
+    cudaRender<<<grid, block, 0>>>((unsigned int*)m_cuda_render_buffer, camera, width, height);
 
     cudaArray *texture_ptr;
     cuda_assert(cudaGraphicsMapResources(1, &m_cuda_tex_resource, 0));
@@ -95,4 +157,9 @@ Renderer::~Renderer() {
     if(m_cuda_render_buffer) {
         cudaFree(m_cuda_render_buffer);
     }
+}
+
+void Renderer::render(int width, int height, const Camera &camera, const Scene &scene)
+{
+
 }

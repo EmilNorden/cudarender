@@ -1,17 +1,23 @@
 set(CMAKE_CUDA_STANDARD 17)
 
+set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${renderer_SOURCE_DIR}/cmake")
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -DRENDER_DEBUG")
 
 add_library(renderer
         renderer/renderer.cu
         renderer/renderer.cuh
+        renderer/camera.cu
+        renderer/camera.cuh
+        renderer/coordinates.cuh
         renderer/cuda_utils.cu
         renderer/cuda_utils.cuh
+        renderer/ray.cuh
         dummy.cpp
         dummy.h)
 
 # find_package(SDL2 REQUIRED)
 find_package(GLEW REQUIRED)
+find_package(GLM REQUIRED)
 find_package(OpenGL REQUIRED)
 find_package(glfw3 REQUIRED)
 
