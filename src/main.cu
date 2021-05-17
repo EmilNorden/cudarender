@@ -35,8 +35,8 @@ GLSLProgram shdrawtex; // GLSLS program for textured draw
 // CUDA <-> OpenGL interop
 GLuint opengl_tex_cuda;
 
-#define WIDTH   800
-#define HEIGHT  600
+#define WIDTH   1024
+#define HEIGHT  512
 
 #if defined(RENDER_DEBUG)
 #define DEBUG_ASSERT_SDL_PTR(x) {                                   \

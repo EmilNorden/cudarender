@@ -84,18 +84,6 @@ cudaRender(unsigned int *g_odata, Camera *camera, int width, int height)
     int x = blockIdx.x*bw + tx;
     int y = blockIdx.y*bh + ty;
 
-    /*Camera camera;
-    camera.set_position(glm::vec3(0.0, 0.0, 0.0));
-    camera.set_direction(glm::vec3(0.0, 0.0, 1.0));
-    camera.set_up(glm::vec3(0.0, 1.0, 0.0));
-    camera.set_field_of_view(90.0 * (3.1415 / 180.0));
-    camera.set_blur_radius(0.0);
-    camera.set_focal_length(1.0);
-    camera.set_shutter_speed(0.0);
-    camera.set_resolution(glm::vec2(width, height));
-
-    camera.update();*/
-
     //uchar4 c4 = make_uchar4((x & 0x20) ? 100 : 0, 0, (y & 0x20) ? 100 : 0, 0);
     // g_odata[y*width + x] = rgbToInt(c4.z, c4.y, c4.x);
 
