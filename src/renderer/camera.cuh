@@ -30,7 +30,7 @@ public:
     __device__ __host__ void set_shutter_speed(float speed) { m_shutter_speed = speed; }
     __device__ __host__ void set_resolution(const glm::vec2& res) {
         m_resolution = res;
-        m_ratio = m_resolution.x / m_resolution.y;
+        m_ratio = m_resolution.x / static_cast<float>(m_resolution.y);
     }
 
     [[nodiscard]] const glm::vec3& position() const { return m_position; }
@@ -45,8 +45,9 @@ public:
     __device__ __host__ void update() {
         const float distance = 10.0;
 
-        double image_plane_width = 2 * distance * tan(m_fov / 2.0);
-        double image_plane_height = image_plane_width * m_ratio;
+        double image_plane_height = 2 * distance * tan(m_fov / 2.0);
+        double image_plane_width = image_plane_height * m_ratio;
+
 
         glm::vec3 n = m_direction * -1.0f;
         n = glm::normalize(n);
