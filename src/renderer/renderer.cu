@@ -5,6 +5,7 @@
 #include "coordinates.cuh"
 #include "renderer.cuh"
 #include "camera.cuh"
+#include "scene.cuh"
 
 #include "cuda_runtime.h"
 #include "cuda_utils.cuh"
@@ -75,7 +76,7 @@ __device__ bool hit_sphere(const WorldSpaceRay& ray) {
 
 
 __global__ void
-cudaRender(unsigned int *g_odata, Camera *camera, int width, int height)
+cudaRender(unsigned int *g_odata, Camera *camera, Scene *scene, int width, int height)
 {
     int tx = threadIdx.x;
     int ty = threadIdx.y;
@@ -90,28 +91,28 @@ cudaRender(unsigned int *g_odata, Camera *camera, int width, int height)
     if(x < width && y < height) {
         auto ray = camera->cast_ray(x, y);
 
-        auto hit = hit_sphere(ray);
+        //auto hit = hit_sphere(ray);
+        auto color = scene->hit(ray);
+        g_odata[y*width + x] = rgbToInt(color.x * 255, color.y * 255, color.z * 255);
 
-        auto factor_x = (x / (float)width);
+        /*auto factor_x = (x / (float)width);
         auto factor_y = (y / (float)height);
         if(hit) {
             g_odata[y*width + x] = rgbToInt(factor_x * 255, 0, factor_y * 255);
         }
         else {
-            g_odata[y*width + x] = rgbToInt(0, 0, 0);
-        }
+            auto color = scene->get_color();
+            g_odata[y*width + x] = rgbToInt(color.x * 255, color.y * 255, color.z * 255);
+        }*/
 
     }
 
 }
 
-
-
-
-void Renderer::render(Camera* camera, int width, int height) {
+void Renderer::render(Camera* camera, Scene *scene, int width, int height) {
     dim3 block(16, 16, 1);
     dim3 grid(width / block.x, std::ceil(height / (float)block.y), 1);
-    cudaRender<<<grid, block, 0>>>((unsigned int*)m_cuda_render_buffer, camera, width, height);
+    cudaRender<<<grid, block, 0>>>((unsigned int*)m_cuda_render_buffer, camera, scene, width, height);
 
     cudaArray *texture_ptr;
     cuda_assert(cudaGraphicsMapResources(1, &m_cuda_tex_resource, 0));

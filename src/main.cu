@@ -12,6 +12,7 @@
 // Renderer
 #include "renderer/camera.cuh"
 #include "renderer/renderer.cuh"
+#include "renderer/scene.cuh"
 
 #if defined(RENDER_DEBUG)
 #define DEBUG_ASSERT_SDL(x) {                                   \
@@ -145,8 +146,8 @@ void init_gl_buffers() {
     check_for_gl_errors();
 }
 
-void display(Camera* camera, Renderer& renderer, GlWindow& window, int frame) {
-    renderer.render(camera, WIDTH, HEIGHT);
+void display(Camera* camera, Scene *scene, Renderer& renderer, GlWindow& window, int frame) {
+    renderer.render(camera, scene, WIDTH, HEIGHT);
     glfwPollEvents();
 
 
@@ -173,8 +174,18 @@ int main() {
 
     Renderer rend{opengl_tex_cuda, WIDTH, HEIGHT};
 
+    Sphere s1{glm::vec3(0.0f, 0.0f, 10.0f), glm::vec3(0.0f, 0.0f, 1.0f), 1.0f};
+    Sphere s2{glm::vec3(2.0f, 0.0f, 10.0f), glm::vec3(1.0f, 0.0f, 1.0f), 1.0f};
+    std::vector<Sphere> spheres;
+    spheres.push_back(s1);
+    spheres.push_back(s2);
+
     Camera *camera;
     cudaMallocManaged(&camera, sizeof(Camera));
+    new(camera) Camera;
+
+
+
     camera->set_position(glm::vec3(0.0, 0.0, 0.0));
     camera->set_direction(glm::vec3(0.0, 0.0, 1.0));
     camera->set_up(glm::vec3(0.0, 1.0, 0.0));
@@ -185,14 +196,21 @@ int main() {
     camera->set_resolution(glm::vec2(WIDTH, HEIGHT));
     camera->update();
 
+    Scene *scene;
+    cudaMallocManaged(&scene, sizeof(Scene));
+    new(scene) Scene;
+    scene->build(spheres);
+
     int frame = 0;
     double f = 0.0;
     while(!window.should_close()) {
         auto start = std::chrono::high_resolution_clock::now();
-
-        camera->set_position(glm::vec3(0.0, 0.0, glm::sin(f)*2.0));
+        auto camera_position = glm::vec3(glm::cos(f)*10.0f, 0.0, 10 + glm::sin(f)*10.0f);
+        auto camera_direction = glm::normalize(glm::vec3(0.0, 0.0, 10.0f) - camera_position);
+        camera->set_position(camera_position);
+        camera->set_direction(camera_direction);
         camera->update();
-        display(camera, rend, window, frame);
+        display(camera, scene, rend, window, frame);
         frame++;
         auto end = std::chrono::high_resolution_clock::now();
         auto duration = std::chrono::duration<double>(end-start);

@@ -5,13 +5,7 @@
 
 class Camera {
 public:
-    Camera(float fov, float aspect_ratio, const glm::uvec2 resolution)
-            : m_resolution(resolution),
-              m_fov(fov),
-              m_ratio(aspect_ratio),
-              m_shutter_speed(0) {}
-
-    __device__ Camera()
+    __device__ __host__ Camera()
             : m_position({0, 0, 0}),
               m_direction({0, 0, -1}),
               m_up({0, 1, 0}),
