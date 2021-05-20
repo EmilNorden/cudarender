@@ -6,23 +6,22 @@
 #include <vector>
 #include "sphere.cuh"
 #include "ray.cuh"
+#include "device_mesh.cuh"
 
-enum Axis {
-    X,
-    Y,
-    Z
-};
-
-
+#define EPSILON 9.99999997475243E-07
 
 class Scene {
 public:
     __device__ glm::vec3  get_color() { return glm::vec3(1.0f, 0.0f, 0.0f); }
 
-    void build(std::vector<Sphere> objects) {
+    void build(std::vector<Sphere> objects, std::vector<DeviceMesh> meshes) {
         cudaMallocManaged(&m_root.spheres, sizeof(Sphere) * objects.size());
         cudaMemcpy(m_root.spheres, objects.data(), sizeof(Sphere) * objects.size(), cudaMemcpyHostToDevice);
         m_root.sphere_count = objects.size();
+
+        cudaMallocManaged(&m_root.meshes, sizeof(DeviceMesh) * meshes.size());
+        cudaMemcpy(m_root.meshes, meshes.data(), sizeof(DeviceMesh) * meshes.size(), cudaMemcpyHostToDevice);
+        m_root.mesh_count = meshes.size();
     }
 
     __device__ glm::vec3 hit(const WorldSpaceRay& ray) {
@@ -37,10 +36,88 @@ public:
             }
         }
 
+        for(int i = 0; i < m_root.mesh_count; ++i) {
+            auto indices = m_root.meshes[i].indices();
+            for(int j = 0; j < m_root.meshes[i].index_count(); j += 3) {
+                auto i0 = m_root.meshes[i].indices()[j];
+                auto i1 = m_root.meshes[i].indices()[j+1];
+                auto i2 = m_root.meshes[i].indices()[j+2];
+
+                auto v0 = m_root.meshes[i].vertices()[i0];
+                auto v1 = m_root.meshes[i].vertices()[i1];
+                auto v2 = m_root.meshes[i].vertices()[i2];
+
+                float hit_distance = 0.0f;
+
+                auto hit_result = hit_triangle(ray, v0, v1, v2, hit_distance);
+
+                if(hit_result && hit_distance < best_distance) {
+                    best_distance = hit_distance;
+                    result_color = glm::vec3(0.0f, 1.0f, 0.0f);
+                }
+            }
+        }
+
         return result_color;
     }
 
 private:
+
+    __device__ bool hit_triangle(const WorldSpaceRay& ray, glm::vec3 v1, glm::vec3 v2, glm::vec3 v3, float &out_distance) {
+        // Find vectors for two edges sharing V1
+        glm::vec3 e1 = v2 - v1;
+        glm::vec3 e2 = v3 - v1;
+        // Begin calculating determinant - also used to calculate u parameter
+        glm::vec3 P = glm::cross(ray.direction(), e2); // m_direction.cross(e2);
+        // if determinant is near zero, ray lies in plane of triangle
+
+        float det = glm::dot(e1, P); // e1.dot(P);
+
+        /*if (det > -EPSILON && det < EPSILON)
+            return false;*/
+
+        // BACK-FACE CULLING
+
+        /*if (inside_geometry && det > EPSILON) {
+            return false;
+        }*/
+        /*if (!inside_geometry && det < EPSILON) {
+            return false;
+        }*/
+
+        float inv_det = 1.0f / det;
+
+        // calculate distance from V1 to ray origin
+        glm::vec3 T = ray.origin().as_vec3() - v1;
+
+        // Calculate u parameter and test bound
+        float u = glm::dot(T, P) * inv_det;
+        // The intersection lies outside of the triangle
+        if (u < 0.f || u > 1.f)
+            return false;
+
+        // Prepare to test v parameter
+        glm::vec3 Q = glm::cross(T, e1); // T.cross(e1);
+
+        // Calculate V parameter and test bound
+        float v = glm::dot(ray.direction(), Q) * inv_det;
+        // The intersection lies outside of the triangle
+        if (v < 0.0f || u + v > 1.0f)
+            return false;
+
+        float t = glm::dot(e2, Q) * inv_det;
+
+        if (t > EPSILON) { // ray intersection
+            out_distance = t;
+            // *dist = t;
+            // *result_u = u;
+            // *result_v = v;
+            return true;
+        }
+
+        // No hit, no win
+        return false;
+    }
 
     __device__ bool hit_sphere(const WorldSpaceRay& ray, glm::vec3 position, float radius, float& out_distance) {
 
@@ -76,16 +153,18 @@ private:
     }
     struct TreeNode {
         TreeNode()
-                : split_axis(Axis::X), location(glm::vec3(0.0f, 0.0f, 0.0f)), left(nullptr), right(nullptr), spheres(nullptr), sphere_count(0) {
+                :  location(glm::vec3(0.0f, 0.0f, 0.0f)), left(nullptr), right(nullptr), spheres(nullptr), sphere_count(0) {
         }
 
-        Axis split_axis;
         glm::vec3 location;
         TreeNode *left;
         TreeNode *right;
 
         Sphere* spheres;
         int sphere_count;
+
+        DeviceMesh *meshes;
+        int mesh_count;
     };
 
     TreeNode m_root;

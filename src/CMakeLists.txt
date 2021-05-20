@@ -11,30 +11,44 @@ add_library(renderer
         renderer/coordinates.cuh
         renderer/cuda_utils.cu
         renderer/cuda_utils.cuh
+        renderer/device_mesh.cu
+        renderer/device_mesh.cuh
+        renderer/kd_tree.cuh
         renderer/ray.cuh
-        dummy.cpp
-        dummy.h)
+        )
 
 # find_package(SDL2 REQUIRED)
 find_package(GLEW REQUIRED)
 find_package(GLM REQUIRED)
 find_package(OpenGL REQUIRED)
 find_package(glfw3 REQUIRED)
+find_package(assimp REQUIRED)
 
-target_include_directories(renderer PRIVATE
-        # ${SDL2_INCLUDE_DIRS}
+### RENDERER
+
+target_include_directories(renderer SYSTEM PRIVATE
         ${GLEW_INCLUDE_DIRS}
         ${OPENGL_INCLUDE_DIR})
 
 target_link_libraries(renderer
-        # ${SDL2_LIBRARIES}
         ${GLEW_LIBRARIES}
         ${OPENGL_LIBRARIES}
         glfw)
 
+set_target_properties(
+        renderer
+        PROPERTIES
+        CUDA_SEPARABLE_COMPILATION ON)
+
+### BINARY
+
 add_executable(renderer_bin
         main.cu
         kernel.cu
+        content/model.cpp
+        content/model.h
+        content/model_loader.cpp
+        content/model_loader.h
         shader_tools/GLSLProgram.cpp
         shader_tools/GLSLShader.cpp
         gui/gl_window.cpp
@@ -42,17 +56,15 @@ add_executable(renderer_bin
         gui/glew_helper.cpp
         gui/glew_helper.h)
 
-target_include_directories(renderer_bin PRIVATE
-        # ${SDL2_INCLUDE_DIRS}
+target_include_directories(renderer_bin SYSTEM PRIVATE
         ${GLEW_INCLUDE_DIRS}
-        ${OPENGL_INCLUDE_DIR})
+        ${OPENGL_INCLUDE_DIR}
+        ${ASSIMP_INCLUDE_DIRS})
 
-target_link_libraries(renderer_bin renderer)
-
-set_target_properties(
+target_link_libraries(renderer_bin
         renderer
-        PROPERTIES
-        CUDA_SEPARABLE_COMPILATION ON)
+        ${ASSIMP_LIBRARIES}
+        )
 
 set_target_properties(
         renderer_bin

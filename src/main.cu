@@ -13,6 +13,7 @@
 #include "renderer/camera.cuh"
 #include "renderer/renderer.cuh"
 #include "renderer/scene.cuh"
+#include "content/model_loader.h"
 
 #if defined(RENDER_DEBUG)
 #define DEBUG_ASSERT_SDL(x) {                                   \
@@ -174,11 +175,17 @@ int main() {
 
     Renderer rend{opengl_tex_cuda, WIDTH, HEIGHT};
 
-    Sphere s1{glm::vec3(0.0f, 0.0f, 10.0f), glm::vec3(0.0f, 0.0f, 1.0f), 1.0f};
-    Sphere s2{glm::vec3(2.0f, 0.0f, 10.0f), glm::vec3(1.0f, 0.0f, 1.0f), 1.0f};
+    Sphere s1{glm::vec3(-2.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f), 1.0f};
+    Sphere s2{glm::vec3(2.0f, 0.0f, 0.0f), glm::vec3(1.0f, 0.0f, 1.0f), 1.0f};
     std::vector<Sphere> spheres;
     spheres.push_back(s1);
     spheres.push_back(s2);
+
+    ModelLoader loader;
+
+    auto model = loader.load("/home/emil/models/1.obj");
+
+    DeviceMesh suzanne{model->meshes().at(0).vertices(), model->meshes().at(0).indices()};
 
     Camera *camera;
     cudaMallocManaged(&camera, sizeof(Camera));
@@ -196,17 +203,37 @@ int main() {
     camera->set_resolution(glm::vec2(WIDTH, HEIGHT));
     camera->update();
 
+    /*
+     *         /*glm::vec3 v1(0.0f, 1.0f, 10.0f);
+        glm::vec3 v2(1.0f, 0.0f, 10.0f);
+        glm::vec3 v3(-1.0f, 0.0f, 10.0f);*/
+
+    std::vector<glm::vec3> vertices;
+    vertices.push_back(glm::vec3(0.0f, 1.0f, 10.0f)); // top
+    vertices.push_back(glm::vec3(1.0f, 0.0f, 10.0f)); // right
+    vertices.push_back(glm::vec3(-1.0f, 0.0f, 10.0f)); // left
+
+    std::vector<int> indices;
+    indices.push_back(0);
+    indices.push_back(1);
+    indices.push_back(2);
+
+    DeviceMesh mesh(vertices, indices);
+
+    std::vector<DeviceMesh> meshes;
+    // meshes.push_back(mesh);
+    meshes.push_back(suzanne);
     Scene *scene;
     cudaMallocManaged(&scene, sizeof(Scene));
     new(scene) Scene;
-    scene->build(spheres);
+    scene->build(spheres, meshes);
 
     int frame = 0;
     double f = 0.0;
     while(!window.should_close()) {
         auto start = std::chrono::high_resolution_clock::now();
-        auto camera_position = glm::vec3(glm::cos(f)*10.0f, 0.0, 10 + glm::sin(f)*10.0f);
-        auto camera_direction = glm::normalize(glm::vec3(0.0, 0.0, 10.0f) - camera_position);
+        auto camera_position = glm::vec3(glm::cos(f)*10.0f, 0.0, glm::sin(f)*10.0f);
+        auto camera_direction = glm::normalize(glm::vec3(0.0, 0.0, 0.0f) - camera_position);
         camera->set_position(camera_position);
         camera->set_direction(camera_direction);
         camera->update();
