@@ -14,13 +14,13 @@ class Scene {
 public:
     __device__ glm::vec3  get_color() { return glm::vec3(1.0f, 0.0f, 0.0f); }
 
-    void build(std::vector<Sphere> objects, std::vector<DeviceMesh> meshes) {
+    void build(std::vector<Sphere> objects, std::vector<IndexedDeviceMesh> meshes) {
         cudaMallocManaged(&m_root.spheres, sizeof(Sphere) * objects.size());
         cudaMemcpy(m_root.spheres, objects.data(), sizeof(Sphere) * objects.size(), cudaMemcpyHostToDevice);
         m_root.sphere_count = objects.size();
 
-        cudaMallocManaged(&m_root.meshes, sizeof(DeviceMesh) * meshes.size());
-        cudaMemcpy(m_root.meshes, meshes.data(), sizeof(DeviceMesh) * meshes.size(), cudaMemcpyHostToDevice);
+        cudaMallocManaged(&m_root.meshes, sizeof(IndexedDeviceMesh) * meshes.size());
+        cudaMemcpy(m_root.meshes, meshes.data(), sizeof(IndexedDeviceMesh) * meshes.size(), cudaMemcpyHostToDevice);
         m_root.mesh_count = meshes.size();
     }
 
@@ -37,15 +37,12 @@ public:
         }
 
         for(int i = 0; i < m_root.mesh_count; ++i) {
-            auto indices = m_root.meshes[i].indices();
-            for(int j = 0; j < m_root.meshes[i].index_count(); j += 3) {
-                auto i0 = m_root.meshes[i].indices()[j];
-                auto i1 = m_root.meshes[i].indices()[j+1];
-                auto i2 = m_root.meshes[i].indices()[j+2];
+            auto faces = m_root.meshes[i].faces();
+            for(int j = 0; j < m_root.meshes[i].face_count(); ++j) {
 
-                auto v0 = m_root.meshes[i].vertices()[i0];
-                auto v1 = m_root.meshes[i].vertices()[i1];
-                auto v2 = m_root.meshes[i].vertices()[i2];
+                auto v0 = m_root.meshes[i].vertices()[faces[j].i0];
+                auto v1 = m_root.meshes[i].vertices()[faces[j].i1];
+                auto v2 = m_root.meshes[i].vertices()[faces[j].i2];
 
                 float hit_distance = 0.0f;
 
@@ -56,6 +53,10 @@ public:
                     result_color = glm::vec3(0.0f, 1.0f, 0.0f);
                 }
             }
+
+            //float hit_distance = 0.0f;
+            // m_root.meshes[i].intersect(ray, hit_distance);
+
         }
 
         return result_color;
@@ -163,7 +164,7 @@ private:
         Sphere* spheres;
         int sphere_count;
 
-        DeviceMesh *meshes;
+        IndexedDeviceMesh *meshes;
         int mesh_count;
     };
 

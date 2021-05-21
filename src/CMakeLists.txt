@@ -4,6 +4,7 @@ set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${renderer_SOURCE_DIR}/cmake")
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -DRENDER_DEBUG")
 
 add_library(renderer
+        renderer/aabb.cuh
         renderer/renderer.cu
         renderer/renderer.cuh
         renderer/camera.cu
@@ -13,6 +14,7 @@ add_library(renderer
         renderer/cuda_utils.cuh
         renderer/device_mesh.cu
         renderer/device_mesh.cuh
+        renderer/device_stack.cuh
         renderer/kd_tree.cuh
         renderer/ray.cuh
         )

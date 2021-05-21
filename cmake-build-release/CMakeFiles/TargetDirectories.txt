@@ -1,0 +1,12 @@
+/home/emil/code/cuda-test2/cmake-build-release/CMakeFiles/rebuild_cache.dir
+/home/emil/code/cuda-test2/cmake-build-release/CMakeFiles/edit_cache.dir
+/home/emil/code/cuda-test2/cmake-build-release/CMakeFiles/test.dir
+/home/emil/code/cuda-test2/cmake-build-release/src/CMakeFiles/rebuild_cache.dir
+/home/emil/code/cuda-test2/cmake-build-release/src/CMakeFiles/renderer.dir
+/home/emil/code/cuda-test2/cmake-build-release/src/CMakeFiles/renderer_bin.dir
+/home/emil/code/cuda-test2/cmake-build-release/src/CMakeFiles/test.dir
+/home/emil/code/cuda-test2/cmake-build-release/src/CMakeFiles/edit_cache.dir
+/home/emil/code/cuda-test2/cmake-build-release/test/CMakeFiles/rebuild_cache.dir
+/home/emil/code/cuda-test2/cmake-build-release/test/CMakeFiles/edit_cache.dir
+/home/emil/code/cuda-test2/cmake-build-release/test/CMakeFiles/test.dir
+/home/emil/code/cuda-test2/cmake-build-release/test/CMakeFiles/Test.dir

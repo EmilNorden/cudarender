@@ -12,6 +12,8 @@ using namespace std;
 
 unique_ptr<Model> ModelLoader::load(const string& path)
 {
+    std::cout << "Loading model " << path << std::endl;
+
     Assimp::Importer importer;
 
     unsigned int assimp_flags =
@@ -32,8 +34,12 @@ unique_ptr<Model> ModelLoader::load(const string& path)
     // TODO: Load materials
     vector<Mesh> meshes;
     for(auto i = 0; i < scene->mNumMeshes; ++i) {
+        std::cout << "  Loading mesh " << i << " (" << scene->mMeshes[i]->mName.C_Str() << ")" << std::endl;
         meshes.push_back(load_single_mesh(scene->mMeshes[i]));
+        std::cout << "    Vertices: " << meshes.back().vertices().size() << "\t\t Faces: " << meshes.back().indices().size() / 3 << std::endl;
     }
+
+    std::cout << std::endl;
 
     return std::make_unique<Model>(meshes);
 }

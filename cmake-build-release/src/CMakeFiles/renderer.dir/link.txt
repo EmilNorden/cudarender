@@ -1,0 +1,2 @@
+/usr/bin/ar qc librenderer.a CMakeFiles/renderer.dir/renderer/renderer.cu.o CMakeFiles/renderer.dir/renderer/camera.cu.o CMakeFiles/renderer.dir/renderer/cuda_utils.cu.o CMakeFiles/renderer.dir/renderer/device_mesh.cu.o
+/usr/bin/ranlib librenderer.a

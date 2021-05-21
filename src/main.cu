@@ -52,11 +52,12 @@ GLuint opengl_tex_cuda;
 #else
 #define DEBUG_ASSERT_SDL_PTR(x)
 #endif
+
 __global__
 void add(int n, float *x, float *y) {
     int index = blockIdx.x * blockDim.x + threadIdx.x;
     int stride = blockDim.x * gridDim.x;
-    for(int i = index; i < n; i += stride) {
+    for (int i = index; i < n; i += stride) {
         y[i] = x[i] + y[i];
     }
 }
@@ -106,9 +107,9 @@ GLuint indices[] = {  // Note that we start from 0!
 */
 
 void check_for_gl_errors() {
-    while(true) {
+    while (true) {
         const GLenum err = glGetError();
-        if(err == GL_NO_ERROR) {
+        if (err == GL_NO_ERROR) {
             break;
         }
 
@@ -116,7 +117,7 @@ void check_for_gl_errors() {
     }
 }
 
-void create_gl_texture(GLuint* gl_tex, unsigned int size_x, unsigned int size_y) {
+void create_gl_texture(GLuint *gl_tex, unsigned int size_x, unsigned int size_y) {
     glGenTextures(1, gl_tex);
     glBindTexture(GL_TEXTURE_2D, *gl_tex);
 
@@ -131,7 +132,7 @@ void create_gl_texture(GLuint* gl_tex, unsigned int size_x, unsigned int size_y)
 }
 
 void init_glfw() {
-    if(!glfwInit()) {
+    if (!glfwInit()) {
         std::cerr << "glfwInit failed!" << std::endl;
         exit(1);
     }
@@ -147,7 +148,7 @@ void init_gl_buffers() {
     check_for_gl_errors();
 }
 
-void display(Camera* camera, Scene *scene, Renderer& renderer, GlWindow& window, int frame) {
+void display(Camera *camera, Scene *scene, Renderer &renderer, GlWindow &window) {
     renderer.render(camera, scene, WIDTH, HEIGHT);
     glfwPollEvents();
 
@@ -165,6 +166,51 @@ void display(Camera* camera, Scene *scene, Renderer& renderer, GlWindow& window,
     window.swap();
 }
 
+void print_cuda_device_info() {
+    int device_count = 0;
+    cudaError_t error_id = cudaGetDeviceCount(&device_count);
+
+    std::cout << "Using the following CUDA device: " << std::endl;
+
+    if (error_id != cudaSuccess) {
+        std::cerr << "cudaGetDeviceCount returned " << (int) error_id << "\n" << cudaGetErrorString(error_id)
+                  << std::endl;
+        exit(1);
+    }
+
+    if (device_count == 0) {
+        std::cout << "There are no available devices that support CUDA" << std::endl;
+        exit(1);
+    }
+
+    int device_id = 0;
+
+    cudaSetDevice(device_id);
+    cudaDeviceProp device_properties{};
+    cudaGetDeviceProperties(&device_properties, device_id);
+
+    std::cout << "  Name: " << device_properties.name << "\n";
+
+    int driver_version, runtime_version;
+    cudaDriverGetVersion(&driver_version);
+    cudaRuntimeGetVersion(&runtime_version);
+
+    printf("  CUDA Driver Version / Runtime Version          %d.%d / %d.%d\n", driver_version / 1000,
+           (driver_version % 100) / 10, runtime_version / 1000, (runtime_version % 100) / 10);
+    printf("  CUDA Capability Major/Minor version number:    %d.%d\n\n", device_properties.major,
+           device_properties.minor);
+
+}
+
+std::vector<TriangleFace> faces_from_indices(const std::vector<int>& indices) {
+    std::vector<TriangleFace> faces;
+    for(int i = 0; i < indices.size(); i += 3) {
+        faces.push_back({indices[i], indices[i+1], indices[i + 2]});
+    }
+
+    return faces;
+}
+
 
 int main() {
     init_glfw();
@@ -172,6 +218,8 @@ int main() {
     GlWindow window{"Hello, world!", WIDTH, HEIGHT};
 
     init_gl_buffers();
+
+    print_cuda_device_info();
 
     Renderer rend{opengl_tex_cuda, WIDTH, HEIGHT};
 
@@ -185,13 +233,12 @@ int main() {
 
     auto model = loader.load("/home/emil/models/1.obj");
 
-    DeviceMesh suzanne{model->meshes().at(0).vertices(), model->meshes().at(0).indices()};
+    auto faces = faces_from_indices(model->meshes().at(0).indices());
+    IndexedDeviceMesh suzanne{model->meshes().at(0).vertices(), faces};
 
     Camera *camera;
     cudaMallocManaged(&camera, sizeof(Camera));
     new(camera) Camera;
-
-
 
     camera->set_position(glm::vec3(0.0, 0.0, 0.0));
     camera->set_direction(glm::vec3(0.0, 0.0, 1.0));
@@ -207,53 +254,53 @@ int main() {
      *         /*glm::vec3 v1(0.0f, 1.0f, 10.0f);
         glm::vec3 v2(1.0f, 0.0f, 10.0f);
         glm::vec3 v3(-1.0f, 0.0f, 10.0f);*/
-
-    std::vector<glm::vec3> vertices;
-    vertices.push_back(glm::vec3(0.0f, 1.0f, 10.0f)); // top
-    vertices.push_back(glm::vec3(1.0f, 0.0f, 10.0f)); // right
-    vertices.push_back(glm::vec3(-1.0f, 0.0f, 10.0f)); // left
-
-    std::vector<int> indices;
-    indices.push_back(0);
-    indices.push_back(1);
-    indices.push_back(2);
-
-    DeviceMesh mesh(vertices, indices);
-
-    std::vector<DeviceMesh> meshes;
-    // meshes.push_back(mesh);
+    std::vector<IndexedDeviceMesh> meshes;
     meshes.push_back(suzanne);
     Scene *scene;
     cudaMallocManaged(&scene, sizeof(Scene));
     new(scene) Scene;
     scene->build(spheres, meshes);
 
-    int frame = 0;
-    double f = 0.0;
-    while(!window.should_close()) {
-        auto start = std::chrono::high_resolution_clock::now();
-        auto camera_position = glm::vec3(glm::cos(f)*10.0f, 0.0, glm::sin(f)*10.0f);
+
+    double rotation = 0.0;
+    double total_duration = 0.0f;
+    double max_duration = 0.0f;
+    int frame_counter = 0;
+    while (!window.should_close()) {
+
+        auto camera_position = glm::vec3(glm::cos(rotation) * 10.0f, 0.0, glm::sin(rotation) * 10.0f);
         auto camera_direction = glm::normalize(glm::vec3(0.0, 0.0, 0.0f) - camera_position);
         camera->set_position(camera_position);
         camera->set_direction(camera_direction);
         camera->update();
-        display(camera, scene, rend, window, frame);
-        frame++;
+        auto start = std::chrono::high_resolution_clock::now();
+        display(camera, scene, rend, window);
         auto end = std::chrono::high_resolution_clock::now();
-        auto duration = std::chrono::duration<double>(end-start);
-        std::cout << "Time to render 1 frame: " << duration.count() << std::endl;
-        f += duration.count();
+        auto frame_duration = std::chrono::duration<double, std::milli>(end - start);
+        frame_counter++;
+        if(frame_duration.count() > max_duration) {
+            max_duration = frame_duration.count();
+        }
+        total_duration += frame_duration.count();
+        std::cout << '\r' << "Frame time: " << frame_duration.count() << "ms\t\t Avg (10 frames): "
+                  << (total_duration / frame_counter) << "ms\t\t Max: " << max_duration << "ms                    " << std::flush;
+
+        if (frame_counter == 10) {
+            frame_counter = 0;
+            total_duration = 0;
+        }
+        rotation += frame_duration.count() * 0.0005;
     }
 
-    int N = 1<<20;
+    int N = 1 << 20;
     float *x, *y;
 
     // Allocate unified memory - accessible from CPU or GPU
-    cudaMallocManaged(&x, N*sizeof(float));
-    cudaMallocManaged(&y, N*sizeof(float));
+    cudaMallocManaged(&x, N * sizeof(float));
+    cudaMallocManaged(&y, N * sizeof(float));
 
     // initialize x and y arrays on the host
-    for(int i = 0; i < N; i++) {
+    for (int i = 0; i < N; i++) {
         x[i] = 1.0f;
         y[i] = 2.0f;
     }
@@ -268,8 +315,8 @@ int main() {
 
     // Check for errors (all values should be 3.0f)
     float maxError = 0.0f;
-    for(int i = 0; i < N; i++) {
-        maxError = std::max(maxError, std::abs(y[i]-3.0f));
+    for (int i = 0; i < N; i++) {
+        maxError = std::max(maxError, std::abs(y[i] - 3.0f));
     }
     std::cout << "Max error: " << maxError << std::endl;
 

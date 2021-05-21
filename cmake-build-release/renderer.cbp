@@ -1,0 +1,301 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CodeBlocks_project_file>
+	<FileVersion major="1" minor="6"/>
+	<Project>
+		<Option title="renderer"/>
+		<Option makefile_is_custom="1"/>
+		<Option compiler="gcc"/>
+		<Option virtualFolders="CMake Files\;CMake Files\src\;CMake Files\cmake\;CMake Files\..\;CMake Files\..\..\;CMake Files\..\..\..\;CMake Files\..\..\..\..\;CMake Files\..\..\..\..\usr\;CMake Files\..\..\..\..\usr\lib\;CMake Files\..\..\..\..\usr\lib\x86_64-linux-gnu\;CMake Files\..\..\..\..\usr\lib\x86_64-linux-gnu\cmake\;CMake Files\..\..\..\..\usr\lib\x86_64-linux-gnu\cmake\glfw3\;CMake Files\..\..\..\..\usr\lib\x86_64-linux-gnu\cmake\assimp-5.0\;CMake Files\test\;"/>
+		<Build>
+			<Target title="all">
+				<Option working_dir="/home/emil/code/cuda-test2/cmake-build-release"/>
+				<Option type="4"/>
+				<MakeCommands>
+					<Build command="/usr/bin/make -j16 -f &quot;/home/emil/code/cuda-test2/cmake-build-release/Makefile&quot;  VERBOSE=1 all"/>
+					<CompileFile command="/usr/bin/make -j16 -f &quot;/home/emil/code/cuda-test2/cmake-build-release/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="/usr/bin/make -j16 -f &quot;/home/emil/code/cuda-test2/cmake-build-release/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="/usr/bin/make -j16 -f &quot;/home/emil/code/cuda-test2/cmake-build-release/Makefile&quot;  VERBOSE=1 clean"/>
+				</MakeCommands>
+			</Target>
+			<Target title="rebuild_cache">
+				<Option working_dir="/home/emil/code/cuda-test2/cmake-build-release"/>
+				<Option type="4"/>
+				<MakeCommands>
+					<Build command="/usr/bin/make -j16 -f &quot;/home/emil/code/cuda-test2/cmake-build-release/Makefile&quot;  VERBOSE=1 rebuild_cache"/>
+					<CompileFile command="/usr/bin/make -j16 -f &quot;/home/emil/code/cuda-test2/cmake-build-release/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="/usr/bin/make -j16 -f &quot;/home/emil/code/cuda-test2/cmake-build-release/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="/usr/bin/make -j16 -f &quot;/home/emil/code/cuda-test2/cmake-build-release/Makefile&quot;  VERBOSE=1 clean"/>
+				</MakeCommands>
+			</Target>
+			<Target title="edit_cache">
+				<Option working_dir="/home/emil/code/cuda-test2/cmake-build-release"/>
+				<Option type="4"/>
+				<MakeCommands>
+					<Build command="/usr/bin/make -j16 -f &quot;/home/emil/code/cuda-test2/cmake-build-release/Makefile&quot;  VERBOSE=1 edit_cache"/>
+					<CompileFile command="/usr/bin/make -j16 -f &quot;/home/emil/code/cuda-test2/cmake-build-release/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="/usr/bin/make -j16 -f &quot;/home/emil/code/cuda-test2/cmake-build-release/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="/usr/bin/make -j16 -f &quot;/home/emil/code/cuda-test2/cmake-build-release/Makefile&quot;  VERBOSE=1 clean"/>
+				</MakeCommands>
+			</Target>
+			<Target title="test">
+				<Option working_dir="/home/emil/code/cuda-test2/cmake-build-release"/>
+				<Option type="4"/>
+				<MakeCommands>
+					<Build command="/usr/bin/make -j16 -f &quot;/home/emil/code/cuda-test2/cmake-build-release/Makefile&quot;  VERBOSE=1 test"/>
+					<CompileFile command="/usr/bin/make -j16 -f &quot;/home/emil/code/cuda-test2/cmake-build-release/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="/usr/bin/make -j16 -f &quot;/home/emil/code/cuda-test2/cmake-build-release/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="/usr/bin/make -j16 -f &quot;/home/emil/code/cuda-test2/cmake-build-release/Makefile&quot;  VERBOSE=1 clean"/>
+				</MakeCommands>
+			</Target>
+			<Target title="renderer">
+				<Option output="/home/emil/code/cuda-test2/cmake-build-release/src/librenderer.a" prefix_auto="0" extension_auto="0"/>
+				<Option working_dir="/home/emil/code/cuda-test2/cmake-build-release/src"/>
+				<Option object_output="./"/>
+				<Option type="2"/>
+				<Option compiler="gcc"/>
+				<Compiler>
+					<Add directory="/usr/include"/>
+					<Add directory="/usr/include/c++/9"/>
+					<Add directory="/usr/include/x86_64-linux-gnu/c++/9"/>
+					<Add directory="/usr/include/c++/9/backward"/>
+					<Add directory="/usr/lib/gcc/x86_64-linux-gnu/9/include"/>
+					<Add directory="/usr/local/include"/>
+					<Add directory="/usr/include/x86_64-linux-gnu"/>
+				</Compiler>
+				<MakeCommands>
+					<Build command="/usr/bin/make -j16 -f &quot;/home/emil/code/cuda-test2/cmake-build-release/src/Makefile&quot;  VERBOSE=1 renderer"/>
+					<CompileFile command="/usr/bin/make -j16 -f &quot;/home/emil/code/cuda-test2/cmake-build-release/src/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="/usr/bin/make -j16 -f &quot;/home/emil/code/cuda-test2/cmake-build-release/src/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="/usr/bin/make -j16 -f &quot;/home/emil/code/cuda-test2/cmake-build-release/src/Makefile&quot;  VERBOSE=1 clean"/>
+				</MakeCommands>
+			</Target>
+			<Target title="renderer/fast">
+				<Option output="/home/emil/code/cuda-test2/cmake-build-release/src/librenderer.a" prefix_auto="0" extension_auto="0"/>
+				<Option working_dir="/home/emil/code/cuda-test2/cmake-build-release/src"/>
+				<Option object_output="./"/>
+				<Option type="2"/>
+				<Option compiler="gcc"/>
+				<Compiler>
+					<Add directory="/usr/include"/>
+					<Add directory="/usr/include/c++/9"/>
+					<Add directory="/usr/include/x86_64-linux-gnu/c++/9"/>
+					<Add directory="/usr/include/c++/9/backward"/>
+					<Add directory="/usr/lib/gcc/x86_64-linux-gnu/9/include"/>
+					<Add directory="/usr/local/include"/>
+					<Add directory="/usr/include/x86_64-linux-gnu"/>
+				</Compiler>
+				<MakeCommands>
+					<Build command="/usr/bin/make -j16 -f &quot;/home/emil/code/cuda-test2/cmake-build-release/src/Makefile&quot;  VERBOSE=1 renderer/fast"/>
+					<CompileFile command="/usr/bin/make -j16 -f &quot;/home/emil/code/cuda-test2/cmake-build-release/src/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="/usr/bin/make -j16 -f &quot;/home/emil/code/cuda-test2/cmake-build-release/src/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="/usr/bin/make -j16 -f &quot;/home/emil/code/cuda-test2/cmake-build-release/src/Makefile&quot;  VERBOSE=1 clean"/>
+				</MakeCommands>
+			</Target>
+			<Target title="renderer_bin">
+				<Option output="/home/emil/code/cuda-test2/cmake-build-release/src/renderer_bin" prefix_auto="0" extension_auto="0"/>
+				<Option working_dir="/home/emil/code/cuda-test2/cmake-build-release/src"/>
+				<Option object_output="./"/>
+				<Option type="1"/>
+				<Option compiler="gcc"/>
+				<Compiler>
+					<Add directory="/usr/include"/>
+					<Add directory="/usr/include/c++/9"/>
+					<Add directory="/usr/include/x86_64-linux-gnu/c++/9"/>
+					<Add directory="/usr/include/c++/9/backward"/>
+					<Add directory="/usr/lib/gcc/x86_64-linux-gnu/9/include"/>
+					<Add directory="/usr/local/include"/>
+					<Add directory="/usr/include/x86_64-linux-gnu"/>
+				</Compiler>
+				<MakeCommands>
+					<Build command="/usr/bin/make -j16 -f &quot;/home/emil/code/cuda-test2/cmake-build-release/src/Makefile&quot;  VERBOSE=1 renderer_bin"/>
+					<CompileFile command="/usr/bin/make -j16 -f &quot;/home/emil/code/cuda-test2/cmake-build-release/src/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="/usr/bin/make -j16 -f &quot;/home/emil/code/cuda-test2/cmake-build-release/src/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="/usr/bin/make -j16 -f &quot;/home/emil/code/cuda-test2/cmake-build-release/src/Makefile&quot;  VERBOSE=1 clean"/>
+				</MakeCommands>
+			</Target>
+			<Target title="renderer_bin/fast">
+				<Option output="/home/emil/code/cuda-test2/cmake-build-release/src/renderer_bin" prefix_auto="0" extension_auto="0"/>
+				<Option working_dir="/home/emil/code/cuda-test2/cmake-build-release/src"/>
+				<Option object_output="./"/>
+				<Option type="1"/>
+				<Option compiler="gcc"/>
+				<Compiler>
+					<Add directory="/usr/include"/>
+					<Add directory="/usr/include/c++/9"/>
+					<Add directory="/usr/include/x86_64-linux-gnu/c++/9"/>
+					<Add directory="/usr/include/c++/9/backward"/>
+					<Add directory="/usr/lib/gcc/x86_64-linux-gnu/9/include"/>
+					<Add directory="/usr/local/include"/>
+					<Add directory="/usr/include/x86_64-linux-gnu"/>
+				</Compiler>
+				<MakeCommands>
+					<Build command="/usr/bin/make -j16 -f &quot;/home/emil/code/cuda-test2/cmake-build-release/src/Makefile&quot;  VERBOSE=1 renderer_bin/fast"/>
+					<CompileFile command="/usr/bin/make -j16 -f &quot;/home/emil/code/cuda-test2/cmake-build-release/src/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="/usr/bin/make -j16 -f &quot;/home/emil/code/cuda-test2/cmake-build-release/src/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="/usr/bin/make -j16 -f &quot;/home/emil/code/cuda-test2/cmake-build-release/src/Makefile&quot;  VERBOSE=1 clean"/>
+				</MakeCommands>
+			</Target>
+			<Target title="Test">
+				<Option output="/home/emil/code/cuda-test2/cmake-build-release/test/Test" prefix_auto="0" extension_auto="0"/>
+				<Option working_dir="/home/emil/code/cuda-test2/cmake-build-release/test"/>
+				<Option object_output="./"/>
+				<Option type="1"/>
+				<Option compiler="gcc"/>
+				<Compiler>
+					<Add directory="/usr/include"/>
+					<Add directory="/usr/include/c++/9"/>
+					<Add directory="/usr/include/x86_64-linux-gnu/c++/9"/>
+					<Add directory="/usr/include/c++/9/backward"/>
+					<Add directory="/usr/lib/gcc/x86_64-linux-gnu/9/include"/>
+					<Add directory="/usr/local/include"/>
+					<Add directory="/usr/include/x86_64-linux-gnu"/>
+				</Compiler>
+				<MakeCommands>
+					<Build command="/usr/bin/make -j16 -f &quot;/home/emil/code/cuda-test2/cmake-build-release/test/Makefile&quot;  VERBOSE=1 Test"/>
+					<CompileFile command="/usr/bin/make -j16 -f &quot;/home/emil/code/cuda-test2/cmake-build-release/test/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="/usr/bin/make -j16 -f &quot;/home/emil/code/cuda-test2/cmake-build-release/test/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="/usr/bin/make -j16 -f &quot;/home/emil/code/cuda-test2/cmake-build-release/test/Makefile&quot;  VERBOSE=1 clean"/>
+				</MakeCommands>
+			</Target>
+			<Target title="Test/fast">
+				<Option output="/home/emil/code/cuda-test2/cmake-build-release/test/Test" prefix_auto="0" extension_auto="0"/>
+				<Option working_dir="/home/emil/code/cuda-test2/cmake-build-release/test"/>
+				<Option object_output="./"/>
+				<Option type="1"/>
+				<Option compiler="gcc"/>
+				<Compiler>
+					<Add directory="/usr/include"/>
+					<Add directory="/usr/include/c++/9"/>
+					<Add directory="/usr/include/x86_64-linux-gnu/c++/9"/>
+					<Add directory="/usr/include/c++/9/backward"/>
+					<Add directory="/usr/lib/gcc/x86_64-linux-gnu/9/include"/>
+					<Add directory="/usr/local/include"/>
+					<Add directory="/usr/include/x86_64-linux-gnu"/>
+				</Compiler>
+				<MakeCommands>
+					<Build command="/usr/bin/make -j16 -f &quot;/home/emil/code/cuda-test2/cmake-build-release/test/Makefile&quot;  VERBOSE=1 Test/fast"/>
+					<CompileFile command="/usr/bin/make -j16 -f &quot;/home/emil/code/cuda-test2/cmake-build-release/test/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="/usr/bin/make -j16 -f &quot;/home/emil/code/cuda-test2/cmake-build-release/test/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="/usr/bin/make -j16 -f &quot;/home/emil/code/cuda-test2/cmake-build-release/test/Makefile&quot;  VERBOSE=1 clean"/>
+				</MakeCommands>
+			</Target>
+		</Build>
+		<Unit filename="/home/emil/code/cuda-test2/src/content/model.cpp">
+			<Option target="renderer_bin"/>
+		</Unit>
+		<Unit filename="/home/emil/code/cuda-test2/src/content/model.h">
+			<Option target="renderer_bin"/>
+		</Unit>
+		<Unit filename="/home/emil/code/cuda-test2/src/content/model_loader.cpp">
+			<Option target="renderer_bin"/>
+		</Unit>
+		<Unit filename="/home/emil/code/cuda-test2/src/content/model_loader.h">
+			<Option target="renderer_bin"/>
+		</Unit>
+		<Unit filename="/home/emil/code/cuda-test2/src/gui/gl_window.cpp">
+			<Option target="renderer_bin"/>
+		</Unit>
+		<Unit filename="/home/emil/code/cuda-test2/src/gui/gl_window.h">
+			<Option target="renderer_bin"/>
+		</Unit>
+		<Unit filename="/home/emil/code/cuda-test2/src/gui/glew_helper.cpp">
+			<Option target="renderer_bin"/>
+		</Unit>
+		<Unit filename="/home/emil/code/cuda-test2/src/gui/glew_helper.h">
+			<Option target="renderer_bin"/>
+		</Unit>
+		<Unit filename="/home/emil/code/cuda-test2/src/kernel.cu">
+			<Option target="renderer_bin"/>
+		</Unit>
+		<Unit filename="/home/emil/code/cuda-test2/src/main.cu">
+			<Option target="renderer_bin"/>
+		</Unit>
+		<Unit filename="/home/emil/code/cuda-test2/src/renderer/aabb.cuh">
+			<Option target="renderer"/>
+		</Unit>
+		<Unit filename="/home/emil/code/cuda-test2/src/renderer/camera.cu">
+			<Option target="renderer"/>
+		</Unit>
+		<Unit filename="/home/emil/code/cuda-test2/src/renderer/camera.cuh">
+			<Option target="renderer"/>
+		</Unit>
+		<Unit filename="/home/emil/code/cuda-test2/src/renderer/coordinates.cuh">
+			<Option target="renderer"/>
+		</Unit>
+		<Unit filename="/home/emil/code/cuda-test2/src/renderer/cuda_utils.cu">
+			<Option target="renderer"/>
+		</Unit>
+		<Unit filename="/home/emil/code/cuda-test2/src/renderer/cuda_utils.cuh">
+			<Option target="renderer"/>
+		</Unit>
+		<Unit filename="/home/emil/code/cuda-test2/src/renderer/device_mesh.cu">
+			<Option target="renderer"/>
+		</Unit>
+		<Unit filename="/home/emil/code/cuda-test2/src/renderer/device_mesh.cuh">
+			<Option target="renderer"/>
+		</Unit>
+		<Unit filename="/home/emil/code/cuda-test2/src/renderer/kd_tree.cuh">
+			<Option target="renderer"/>
+		</Unit>
+		<Unit filename="/home/emil/code/cuda-test2/src/renderer/ray.cuh">
+			<Option target="renderer"/>
+		</Unit>
+		<Unit filename="/home/emil/code/cuda-test2/src/renderer/renderer.cu">
+			<Option target="renderer"/>
+		</Unit>
+		<Unit filename="/home/emil/code/cuda-test2/src/renderer/renderer.cuh">
+			<Option target="renderer"/>
+		</Unit>
+		<Unit filename="/home/emil/code/cuda-test2/src/shader_tools/GLSLProgram.cpp">
+			<Option target="renderer_bin"/>
+		</Unit>
+		<Unit filename="/home/emil/code/cuda-test2/src/shader_tools/GLSLProgram.h">
+			<Option target="renderer_bin"/>
+		</Unit>
+		<Unit filename="/home/emil/code/cuda-test2/src/shader_tools/GLSLShader.cpp">
+			<Option target="renderer_bin"/>
+		</Unit>
+		<Unit filename="/home/emil/code/cuda-test2/src/shader_tools/GLSLShader.h">
+			<Option target="renderer_bin"/>
+		</Unit>
+		<Unit filename="/home/emil/code/cuda-test2/test/test.cpp">
+			<Option target="Test"/>
+		</Unit>
+		<Unit filename="/home/emil/code/cuda-test2/CMakeLists.txt">
+			<Option virtualFolder="CMake Files\"/>
+		</Unit>
+		<Unit filename="/home/emil/code/cuda-test2/src/CMakeLists.txt">
+			<Option virtualFolder="CMake Files\src\"/>
+		</Unit>
+		<Unit filename="/home/emil/code/cuda-test2/cmake/FindGLM.cmake">
+			<Option virtualFolder="CMake Files\cmake\"/>
+		</Unit>
+		<Unit filename="/home/emil/code/cuda-test2/../../../../usr/lib/x86_64-linux-gnu/cmake/glfw3/glfw3Config.cmake">
+			<Option virtualFolder="CMake Files\..\..\..\..\usr\lib\x86_64-linux-gnu\cmake\glfw3\"/>
+		</Unit>
+		<Unit filename="/home/emil/code/cuda-test2/../../../../usr/lib/x86_64-linux-gnu/cmake/glfw3/glfw3ConfigVersion.cmake">
+			<Option virtualFolder="CMake Files\..\..\..\..\usr\lib\x86_64-linux-gnu\cmake\glfw3\"/>
+		</Unit>
+		<Unit filename="/home/emil/code/cuda-test2/../../../../usr/lib/x86_64-linux-gnu/cmake/glfw3/glfw3Targets-none.cmake">
+			<Option virtualFolder="CMake Files\..\..\..\..\usr\lib\x86_64-linux-gnu\cmake\glfw3\"/>
+		</Unit>
+		<Unit filename="/home/emil/code/cuda-test2/../../../../usr/lib/x86_64-linux-gnu/cmake/glfw3/glfw3Targets.cmake">
+			<Option virtualFolder="CMake Files\..\..\..\..\usr\lib\x86_64-linux-gnu\cmake\glfw3\"/>
+		</Unit>
+		<Unit filename="/home/emil/code/cuda-test2/../../../../usr/lib/x86_64-linux-gnu/cmake/assimp-5.0/assimp-config-version.cmake">
+			<Option virtualFolder="CMake Files\..\..\..\..\usr\lib\x86_64-linux-gnu\cmake\assimp-5.0\"/>
+		</Unit>
+		<Unit filename="/home/emil/code/cuda-test2/../../../../usr/lib/x86_64-linux-gnu/cmake/assimp-5.0/assimp-config.cmake">
+			<Option virtualFolder="CMake Files\..\..\..\..\usr\lib\x86_64-linux-gnu\cmake\assimp-5.0\"/>
+		</Unit>
+		<Unit filename="/home/emil/code/cuda-test2/../../../../usr/lib/x86_64-linux-gnu/cmake/assimp-5.0/assimpTargets-release.cmake">
+			<Option virtualFolder="CMake Files\..\..\..\..\usr\lib\x86_64-linux-gnu\cmake\assimp-5.0\"/>
+		</Unit>
+		<Unit filename="/home/emil/code/cuda-test2/../../../../usr/lib/x86_64-linux-gnu/cmake/assimp-5.0/assimpTargets.cmake">
+			<Option virtualFolder="CMake Files\..\..\..\..\usr\lib\x86_64-linux-gnu\cmake\assimp-5.0\"/>
+		</Unit>
+		<Unit filename="/home/emil/code/cuda-test2/test/CMakeLists.txt">
+			<Option virtualFolder="CMake Files\test\"/>
+		</Unit>
+	</Project>
+</CodeBlocks_project_file>
