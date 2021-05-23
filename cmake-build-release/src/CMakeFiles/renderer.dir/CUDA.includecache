@@ -6,6 +6,12 @@
 
 #IncludeRegexTransform: 
 
+/home/emil/code/cuda-test2/src/renderer/aabb.cuh
+glm/glm.hpp
+-
+vector
+-
+
 /home/emil/code/cuda-test2/src/renderer/camera.cuh
 ray.cuh
 /home/emil/code/cuda-test2/src/renderer/ray.cuh
@@ -19,6 +25,8 @@ glm/glm.hpp
 /home/emil/code/cuda-test2/src/renderer/device_mesh.cu
 device_mesh.cuh
 /home/emil/code/cuda-test2/src/renderer/device_mesh.cuh
+device_stack.cuh
+/home/emil/code/cuda-test2/src/renderer/device_stack.cuh
 
 /home/emil/code/cuda-test2/src/renderer/device_mesh.cuh
 thrust/device_vector.h
@@ -29,6 +37,16 @@ vector
 -
 kd_tree.cuh
 /home/emil/code/cuda-test2/src/renderer/kd_tree.cuh
+ray.cuh
+/home/emil/code/cuda-test2/src/renderer/ray.cuh
+aabb.cuh
+/home/emil/code/cuda-test2/src/renderer/aabb.cuh
+
+/home/emil/code/cuda-test2/src/renderer/device_stack.cuh
+cstddef
+-
+assert.h
+-
 
 /home/emil/code/cuda-test2/src/renderer/kd_tree.cuh
 glm/glm.hpp

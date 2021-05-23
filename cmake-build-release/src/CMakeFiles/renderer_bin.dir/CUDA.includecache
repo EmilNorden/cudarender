@@ -52,6 +52,12 @@ renderer/scene.cuh
 content/model_loader.h
 /home/emil/code/cuda-test2/src/content/model_loader.h
 
+/home/emil/code/cuda-test2/src/renderer/aabb.cuh
+glm/glm.hpp
+-
+vector
+-
+
 /home/emil/code/cuda-test2/src/renderer/camera.cuh
 ray.cuh
 /home/emil/code/cuda-test2/src/renderer/ray.cuh
@@ -69,6 +75,10 @@ vector
 -
 kd_tree.cuh
 /home/emil/code/cuda-test2/src/renderer/kd_tree.cuh
+ray.cuh
+/home/emil/code/cuda-test2/src/renderer/ray.cuh
+aabb.cuh
+/home/emil/code/cuda-test2/src/renderer/aabb.cuh
 
 /home/emil/code/cuda-test2/src/renderer/kd_tree.cuh
 glm/glm.hpp

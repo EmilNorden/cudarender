@@ -11,9 +11,10 @@ CMake Warning (dev) at /usr/lib/x86_64-linux-gnu/cmake/assimp-5.0/assimpTargets.
   set the policy and suppress this warning.
 Call Stack (most recent call first):
   /usr/lib/x86_64-linux-gnu/cmake/assimp-5.0/assimp-config.cmake:1 (include)
-  src/CMakeLists.txt:26 (find_package)
+  src/CMakeLists.txt:27 (find_package)
 This warning is for project developers.  Use -Wno-dev to suppress it.
 
+-----------> /home/emil/code/cuda-test2
 -- Configuring done
 -- Generating done
 -- Build files have been written to: /home/emil/code/cuda-test2/cmake-build-release

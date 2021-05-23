@@ -1,15 +1,16 @@
 # The set of languages for which implicit dependencies are needed:
 set(CMAKE_DEPENDS_LANGUAGES
-  "CXX"
+  "CUDA"
   )
 # The set of files for implicit dependencies of each language:
-set(CMAKE_DEPENDS_CHECK_CXX
-  "/home/emil/code/cuda-test2/test/test.cpp" "/home/emil/code/cuda-test2/cmake-build-release/test/CMakeFiles/Test.dir/test.cpp.o"
+set(CMAKE_DEPENDS_CHECK_CUDA
+  "/home/emil/code/cuda-test2/test/test.cu" "/home/emil/code/cuda-test2/cmake-build-release/test/CMakeFiles/Test.dir/test.cu.o"
   )
-set(CMAKE_CXX_COMPILER_ID "GNU")
+set(CMAKE_CUDA_COMPILER_ID "NVIDIA")
 
 # The include file search paths:
-set(CMAKE_CXX_TARGET_INCLUDE_PATH
+set(CMAKE_CUDA_TARGET_INCLUDE_PATH
+  "../src"
   )
 
 # Targets to which this target links.

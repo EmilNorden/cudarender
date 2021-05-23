@@ -240,10 +240,10 @@ int main() {
     cudaMallocManaged(&camera, sizeof(Camera));
     new(camera) Camera;
 
-    camera->set_position(glm::vec3(0.0, 0.0, 0.0));
-    camera->set_direction(glm::vec3(0.0, 0.0, 1.0));
+    camera->set_position(glm::vec3(0.0, 0.0, 10.0));
+    camera->set_direction(glm::vec3(0.0, 0.0,-1.0));
     camera->set_up(glm::vec3(0.0, 1.0, 0.0));
-    camera->set_field_of_view(75.0 * (3.1415 / 180.0));
+    camera->set_field_of_view(90.0 * (3.1415 / 180.0));
     camera->set_blur_radius(0.0);
     camera->set_focal_length(1.0);
     camera->set_shutter_speed(0.0);
@@ -283,7 +283,7 @@ int main() {
         }
         total_duration += frame_duration.count();
         std::cout << '\r' << "Frame time: " << frame_duration.count() << "ms\t\t Avg (10 frames): "
-                  << (total_duration / frame_counter) << "ms\t\t Max: " << max_duration << "ms                    " << std::flush;
+                  << (total_duration / frame_counter) << "ms\t\t Max: " << max_duration << "ms\tt Camera: " << camera_position.x << "," << camera_position.y << "," << camera_position.z << "                    " << std::flush;
 
         if (frame_counter == 10) {
             frame_counter = 0;

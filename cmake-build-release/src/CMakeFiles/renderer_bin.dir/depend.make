@@ -7,6 +7,7 @@ src/CMakeFiles/renderer_bin.dir/main.cu.o: ../src/content/model.h
 src/CMakeFiles/renderer_bin.dir/main.cu.o: ../src/content/model_loader.h
 src/CMakeFiles/renderer_bin.dir/main.cu.o: ../src/gui/gl_window.h
 src/CMakeFiles/renderer_bin.dir/main.cu.o: ../src/main.cu
+src/CMakeFiles/renderer_bin.dir/main.cu.o: ../src/renderer/aabb.cuh
 src/CMakeFiles/renderer_bin.dir/main.cu.o: ../src/renderer/camera.cuh
 src/CMakeFiles/renderer_bin.dir/main.cu.o: ../src/renderer/coordinates.cuh
 src/CMakeFiles/renderer_bin.dir/main.cu.o: ../src/renderer/device_mesh.cuh

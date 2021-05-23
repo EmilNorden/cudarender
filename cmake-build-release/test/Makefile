@@ -155,32 +155,32 @@ Test/fast:
 	cd /home/emil/code/cuda-test2/cmake-build-release && $(MAKE) $(MAKESILENT) -f test/CMakeFiles/Test.dir/build.make test/CMakeFiles/Test.dir/build
 .PHONY : Test/fast
 
-test.o: test.cpp.o
+test.o: test.cu.o
 
 .PHONY : test.o
 
 # target to build an object file
-test.cpp.o:
-	cd /home/emil/code/cuda-test2/cmake-build-release && $(MAKE) $(MAKESILENT) -f test/CMakeFiles/Test.dir/build.make test/CMakeFiles/Test.dir/test.cpp.o
-.PHONY : test.cpp.o
+test.cu.o:
+	cd /home/emil/code/cuda-test2/cmake-build-release && $(MAKE) $(MAKESILENT) -f test/CMakeFiles/Test.dir/build.make test/CMakeFiles/Test.dir/test.cu.o
+.PHONY : test.cu.o
 
-test.i: test.cpp.i
+test.i: test.cu.i
 
 .PHONY : test.i
 
 # target to preprocess a source file
-test.cpp.i:
-	cd /home/emil/code/cuda-test2/cmake-build-release && $(MAKE) $(MAKESILENT) -f test/CMakeFiles/Test.dir/build.make test/CMakeFiles/Test.dir/test.cpp.i
-.PHONY : test.cpp.i
+test.cu.i:
+	cd /home/emil/code/cuda-test2/cmake-build-release && $(MAKE) $(MAKESILENT) -f test/CMakeFiles/Test.dir/build.make test/CMakeFiles/Test.dir/test.cu.i
+.PHONY : test.cu.i
 
-test.s: test.cpp.s
+test.s: test.cu.s
 
 .PHONY : test.s
 
 # target to generate assembly for a file
-test.cpp.s:
-	cd /home/emil/code/cuda-test2/cmake-build-release && $(MAKE) $(MAKESILENT) -f test/CMakeFiles/Test.dir/build.make test/CMakeFiles/Test.dir/test.cpp.s
-.PHONY : test.cpp.s
+test.cu.s:
+	cd /home/emil/code/cuda-test2/cmake-build-release && $(MAKE) $(MAKESILENT) -f test/CMakeFiles/Test.dir/build.make test/CMakeFiles/Test.dir/test.cu.s
+.PHONY : test.cu.s
 
 # Help Target
 help:

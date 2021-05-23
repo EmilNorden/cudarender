@@ -27,16 +27,17 @@ public:
     __device__ glm::vec3 hit(const WorldSpaceRay& ray) {
         auto result_color = glm::vec3(0.0f, 0.0f, 0.0f);
         auto best_distance = FLT_MAX;
-        for(int i = 0; i < m_root.sphere_count; ++i) {
+        /*for(int i = 0; i < m_root.sphere_count; ++i) {
             float hit_distance = 0.0f;
             auto hit_result = hit_sphere(ray, m_root.spheres[i].location(), m_root.spheres[i].radius(), hit_distance);
             if(hit_result && hit_distance < best_distance) {
                 best_distance = hit_distance;
                 result_color = m_root.spheres[i].color();
             }
-        }
+        }*/
 
         for(int i = 0; i < m_root.mesh_count; ++i) {
+            /*
             auto faces = m_root.meshes[i].faces();
             for(int j = 0; j < m_root.meshes[i].face_count(); ++j) {
 
@@ -53,9 +54,14 @@ public:
                     result_color = glm::vec3(0.0f, 1.0f, 0.0f);
                 }
             }
-
-            //float hit_distance = 0.0f;
-            // m_root.meshes[i].intersect(ray, hit_distance);
+             */
+            float hit_distance = 0.0f;
+            if(m_root.meshes[i].intersect(ray, hit_distance)) {
+                // if(hit_distance < best_distance) {
+                    best_distance = hit_distance;
+                    result_color = glm::vec3(0.0f, 1.0f, 0.0f);
+                // }
+            }
 
         }
 

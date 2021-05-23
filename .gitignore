@@ -5,3 +5,4 @@
 *.cubin
 *.fatbin
 cmake-build-debug
+cmake-build-release

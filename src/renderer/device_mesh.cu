@@ -3,6 +3,8 @@
 
 using namespace std;
 
+#define STACK_SIZE      20
+
 template<typename T>
 struct Tuple {
     T item1;
@@ -10,8 +12,8 @@ struct Tuple {
 };
 
 struct TreeNode {
-    Axis plane_surface_normal;
-    glm::vec3 plane_position;
+    Axis splitting_axis;
+    float splitting_value;
     TreeNode *left;
     TreeNode *right;
     TriangleFace *faces;
@@ -22,13 +24,25 @@ struct NodeSearchData {
     TreeNode *node;
     float tmin;
     float tmax;
+
+    __device__ NodeSearchData()
+            : node(nullptr), tmin(0), tmax(0) {
+
+    }
+
+    __device__ NodeSearchData(TreeNode *n, float min, float max)
+            : node(n), tmin(min), tmax(max) {
+
+    }
 };
 
 __device__ bool
-intersect_node(TreeNode *node, const WorldSpaceRay &ray, float &tmin, float &tmax, DeviceStack<NodeSearchData> &nodes);
+intersect_node(TreeNode *node, const WorldSpaceRay &ray, float &tmin, float &tmax,
+               DeviceStack<STACK_SIZE, NodeSearchData> &nodes);
 
 __device__ bool
-intersect_leaf(TreeNode *node, const WorldSpaceRay &ray, float &tmin, float &tmax, DeviceStack<NodeSearchData> &nodes);
+intersect_leaf(TreeNode *node, const WorldSpaceRay &ray, float &tmin, float &tmax,
+               DeviceStack<STACK_SIZE, NodeSearchData> &nodes);
 
 #define EPSILON 9.99999997475243E-07
 
@@ -145,9 +159,22 @@ __host__ IndexedDeviceMesh::IndexedDeviceMesh(const std::vector<glm::vec3> &vert
     build_node(*m_root, faces_copy, Axis::X);
 }
 
+bool is_sorted(glm::vec3 *verts, std::vector<TriangleFace> &faces) {
+    for (auto i = 0; i < faces.size() - 1; ++i) {
+        auto current_face = faces[i];
+        auto next_face = faces[i + 1];
+
+        if (verts[current_face.i0].x > verts[next_face.i0].x) {
+            return false;
+        }
+    }
+
+    return true;
+}
+
 void IndexedDeviceMesh::build_node(TreeNode &node, std::vector<TriangleFace> &faces, Axis current_axis) {
 
-    if (faces.size() < 100) {
+    if (faces.size() < 2000) {
         cudaMalloc(&node.faces, sizeof(TriangleFace) * faces.size());
         cudaMemcpy(node.faces, faces.data(), sizeof(TriangleFace) * faces.size(), cudaMemcpyHostToDevice);
         node.face_count = faces.size();
@@ -155,6 +182,8 @@ void IndexedDeviceMesh::build_node(TreeNode &node, std::vector<TriangleFace> &fa
         node.right = nullptr;
         return;
     }
+
+    auto axis = static_cast<int>(current_axis);
 
     static glm::vec3 axis_normals[3] = {
             glm::vec3(1.0f, 0.0f, 0.0f),
@@ -170,17 +199,12 @@ void IndexedDeviceMesh::build_node(TreeNode &node, std::vector<TriangleFace> &fa
         auto a_v0 = m_vertices[a.i0];
         auto b_v0 = m_vertices[b.i0];
 
-        // TODO: Replace this with a simple multiplication since we are working with axis aligned vectors.
-        // TODO: IE the projection of {1.03; 8.00; -34.01} onto {1.0; 0.0, 0.0} is simply the value of X, 1.03.
-        auto a_projection = glm::dot(a_v0, axis_normals[static_cast<int>(current_axis)]);
-        auto b_projection = glm::dot(b_v0, axis_normals[static_cast<int>(current_axis)]);
-
-        return a_projection < b_projection;
+        return a_v0[axis] < b_v0[axis];
     });
 
     auto half_size = faces.size() / 2;
     auto median_point = m_vertices[faces[half_size].i0];
-    auto median_projection = glm::dot(median_point, axis_normals[static_cast<int>(current_axis)]);
+    auto splitting_value = median_point[axis];
 
     // If there was no chance of triangles belonging on both sides (intersecting the splitting plane)
     // we could just do a naive split like below. Instead we have to loop through and possibly duplicate
@@ -194,25 +218,25 @@ void IndexedDeviceMesh::build_node(TreeNode &node, std::vector<TriangleFace> &fa
     right_side.reserve(half_size);
 
     for (auto &face : faces) {
-        auto v0_projection = glm::dot(m_vertices[face.i0], axis_normals[static_cast<int>(current_axis)]);
-        auto v1_projection = glm::dot(m_vertices[face.i1], axis_normals[static_cast<int>(current_axis)]);
-        auto v2_projection = glm::dot(m_vertices[face.i2], axis_normals[static_cast<int>(current_axis)]);
+        auto v0 = m_vertices[face.i0];
+        auto v1 = m_vertices[face.i1];
+        auto v2 = m_vertices[face.i2];
 
-        if (v0_projection >= median_projection ||
-            v1_projection >= median_projection ||
-            v2_projection >= median_projection) {
+        if (v0[axis] >= splitting_value ||
+            v1[axis] >= splitting_value ||
+            v2[axis] >= splitting_value) {
             right_side.push_back(face);
         }
 
-        if (v0_projection < median_projection ||
-            v1_projection < median_projection ||
-            v2_projection < median_projection) {
+        if (v0[axis] < splitting_value ||
+            v1[axis] < splitting_value ||
+            v2[axis] < splitting_value) {
             left_side.push_back(face);
         }
     }
 
-    node.plane_surface_normal = current_axis;
-    node.plane_position = median_point; // TODO: This could really just be a single float
+    node.splitting_axis = current_axis;
+    node.splitting_value = splitting_value;
     node.faces = nullptr;
     node.face_count = 0;
     cudaMallocManaged(&node.left, sizeof(TreeNode));
@@ -221,7 +245,154 @@ void IndexedDeviceMesh::build_node(TreeNode &node, std::vector<TriangleFace> &fa
     build_node(*node.right, right_side, static_cast<Axis>((current_axis + 1) % 3));
 }
 
+__device__ bool is_leaf(TreeNode *node) {
+    return node->faces;
+}
+
+__device__ bool intersects_mesh(const WorldSpaceRay &ray, TreeNode *node, glm::vec3 *vertices, float &tmax) {
+    auto success = false;
+    for (auto i = 0; i < node->face_count; ++i) {
+        auto v0 = vertices[node->faces[i].i0];
+        auto v1 = vertices[node->faces[i].i1];
+        auto v2 = vertices[node->faces[i].i2];
+
+        float hit_distance = 0.0f;
+
+        auto hit_result = hit_triangle(ray, v0, v1, v2, hit_distance);
+
+        if (hit_result && hit_distance < tmax) {
+            // tmax = hit_distance;
+            success = true;
+        }
+    }
+
+    return success;
+}
+
+__device__ Tuple<TreeNode *> order_subnodes(const WorldSpaceRay &ray, TreeNode *node, float tmin, float tmax) {
+    auto axis = static_cast<int>(node->splitting_axis);
+    auto tmin_axis = ray.origin().as_vec3()[axis] + (ray.direction()[axis] * tmin);
+    auto tmax_axis = ray.origin().as_vec3()[axis] + (ray.direction()[axis] * tmax);
+
+    if (tmin_axis < node->splitting_value && tmax_axis < node->splitting_value) {
+        return {
+                node->left,
+                node->right
+        };
+    } else if (tmin_axis >= node->splitting_value && tmax_axis >= node->splitting_value) {
+        return {
+                node->left,
+                node->right
+        };
+    } else if (tmin_axis < node->splitting_value && tmax_axis > node->splitting_value) {
+        return {
+                node->left,
+                node->right
+        };
+    } else {
+        return {
+                node->right,
+                node->left
+        };
+    }
+
+}
+
+enum class RangePlaneComparison {
+    BelowPlane,
+    AbovePlane,
+    BelowToAbove,
+    AboveToBelow
+};
+
+__device__ RangePlaneComparison
+CompareRangeWithPlane(const WorldSpaceRay &ray, float tmin, float tmax, TreeNode *node) {
+    auto axis = (int) node->splitting_axis;
+    // TODO: Extract components before performing multiplication etc.
+    auto range_start = ray.origin().as_vec3() + (ray.direction() * tmin);
+    auto range_end = ray.origin().as_vec3() + (ray.direction() * tmax);
+
+    auto splitting_value = node->splitting_value;
+
+    if (range_start[axis] < splitting_value && range_end[axis] < splitting_value) {
+        return RangePlaneComparison::BelowPlane;
+    } else if (range_start[axis] >= splitting_value && range_end[axis] >= splitting_value) {
+        return RangePlaneComparison::AbovePlane;
+    } else if (range_start[axis] < splitting_value && range_end[axis] >= splitting_value) {
+        return RangePlaneComparison::BelowToAbove;
+    } else if (range_start[axis] >= splitting_value && range_end[axis] < splitting_value) {
+        return RangePlaneComparison::AboveToBelow;
+    }
+
+    assert(false);
+}
+
+
 __device__ bool IndexedDeviceMesh::intersect(const WorldSpaceRay &ray, float &out_distance) {
+    out_distance = FLT_MAX;
+    float global_tmin = 0.0f;
+    float global_tmax = 0.0f;
+    if (!hit_aabb(ray, m_bounds, global_tmin, global_tmax)) {
+        return false;
+    }
+
+    DeviceStack<STACK_SIZE, NodeSearchData> nodes;
+    nodes.push({
+                       m_root,
+                       global_tmin,
+                       global_tmax
+               });
+
+    /*nodes.push({
+        m_root->left,
+        tmin,
+        tmax
+    });
+    nodes.push({
+                       m_root->right,
+                       tmin,
+                       tmax
+               });*/
+
+
+    while (!nodes.is_empty()) {
+        auto current = nodes.pop();
+        auto node = current.node;
+        auto tmin = current.tmin;
+        auto tmax = current.tmax;
+
+        if (is_leaf(node)) {
+            if (intersects_mesh(ray, node, m_vertices, tmax)) {
+                return true;
+            }
+        } else {
+            auto a = (int) node->splitting_axis;
+            auto thit = (node->splitting_value - ray.origin().as_vec3()[a]) / ray.direction()[a];
+
+            switch (CompareRangeWithPlane(ray, tmin, tmax, node)) {
+                case RangePlaneComparison::AbovePlane:
+                    nodes.push(NodeSearchData{node->right, tmin, tmax});
+                    break;
+                case RangePlaneComparison::BelowPlane:
+                    nodes.push(NodeSearchData{node->left, tmin, tmax});
+                    break;
+                case RangePlaneComparison::AboveToBelow:
+                    nodes.push(NodeSearchData{node->right, tmin, thit});
+                    nodes.push(NodeSearchData{node->left, thit, tmax});
+                    break;
+                case RangePlaneComparison::BelowToAbove:
+                    nodes.push(NodeSearchData{node->right, thit, tmax});
+                    nodes.push(NodeSearchData{node->left, tmin, thit});
+                    break;
+            }
+        }
+    }
+
+    return false;
+}
+
+
+/*__device__ bool IndexedDeviceMesh::intersect(const WorldSpaceRay &ray, float &out_distance) {
     out_distance = FLT_MAX;
     float tmin = 0.0f;
     float tmax = 0.0f;
@@ -231,59 +402,32 @@ __device__ bool IndexedDeviceMesh::intersect(const WorldSpaceRay &ray, float &ou
 
     DeviceStack<NodeSearchData> nodes;
     return intersect_node(m_root, ray, tmin, tmax, nodes);
-}
-
-__device__ Tuple<TreeNode *> order_subnodes(const WorldSpaceRay &ray, TreeNode *node, float tmin, float tmax) {
-    auto axis = static_cast<int>(node->plane_surface_normal);
-    auto tmin_axis = ray.origin().as_vec3()[axis] + (ray.direction()[axis] * tmin);
-    auto tmax_axis = ray.origin().as_vec3()[axis] + (ray.direction()[axis] * tmax);
-
-    auto split_value = node->plane_position[axis];
-
-    if (tmin_axis < split_value && tmax_axis < split_value) {
-        return {
-                node->left,
-                node->right
-        };
-    } else if (tmin_axis >= split_value && tmax_axis >= split_value) {
-        return {
-                node->right,
-                node->left
-        };
-    } else {
-        return {
-                node->left,
-                node->right
-        };
-    }
-
-
-}
+}*/
 
 __device__ bool
-intersect_split(TreeNode *node, const WorldSpaceRay &ray, float &tmin, float &tmax, DeviceStack<NodeSearchData> &nodes) {
-    auto a = (int) node->plane_surface_normal;
-    auto thit = (node->plane_position[a] - ray.origin().as_vec3()[a]) / ray.direction()[a];
+intersect_split(TreeNode *node, const WorldSpaceRay &ray, float &tmin, float &tmax,
+                DeviceStack<STACK_SIZE, NodeSearchData> &nodes) {
+    auto a = (int) node->splitting_axis;
+    auto thit = (node->splitting_value - ray.origin().as_vec3()[a]) / ray.direction()[a];
     auto nodes_to_search = order_subnodes(ray, node, tmin, tmax);
 
     if (thit >= tmax || thit < 0) {
         return intersect_node(nodes_to_search.item1, ray, tmin, tmax, nodes);
-    }
-    else if(thit <= tmin) {
+    } else if (thit <= tmin) {
         return intersect_node(nodes_to_search.item2, ray, tmin, tmax, nodes);
-    }
-    else {
+    } else {
         nodes.push({
-            nodes_to_search.item2,
-            thit,
-            tmax
-        });
+                           nodes_to_search.item2,
+                           thit,
+                           tmax
+                   });
         return intersect_node(nodes_to_search.item1, ray, tmin, thit, nodes);
     }
 }
 
 __device__ bool
-intersect_node(TreeNode *node, const WorldSpaceRay &ray, float &tmin, float &tmax, DeviceStack<NodeSearchData> &nodes) {
+intersect_node(TreeNode *node, const WorldSpaceRay &ray, float &tmin, float &tmax,
+               DeviceStack<STACK_SIZE, NodeSearchData> &nodes) {
     if (node->faces) {
         return intersect_leaf(node, ray, tmin, tmax, nodes);
     } else {
@@ -293,7 +437,7 @@ intersect_node(TreeNode *node, const WorldSpaceRay &ray, float &tmin, float &tma
 
 __device__ bool
 intersect_leaf(TreeNode *node, const glm::vec3 *vertices, const WorldSpaceRay &ray, float &tmin, float &tmax,
-               DeviceStack<NodeSearchData> &nodes) {
+               DeviceStack<STACK_SIZE, NodeSearchData> &nodes) {
     auto success = false;
     for (auto i = 0; i < node->face_count; ++i) {
         auto v0 = vertices[node->faces[i].i0];

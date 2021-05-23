@@ -142,6 +142,7 @@
 				<Option type="1"/>
 				<Option compiler="gcc"/>
 				<Compiler>
+					<Add directory="/home/emil/code/cuda-test2/src"/>
 					<Add directory="/usr/include"/>
 					<Add directory="/usr/include/c++/9"/>
 					<Add directory="/usr/include/x86_64-linux-gnu/c++/9"/>
@@ -164,6 +165,7 @@
 				<Option type="1"/>
 				<Option compiler="gcc"/>
 				<Compiler>
+					<Add directory="/home/emil/code/cuda-test2/src"/>
 					<Add directory="/usr/include"/>
 					<Add directory="/usr/include/c++/9"/>
 					<Add directory="/usr/include/x86_64-linux-gnu/c++/9"/>
@@ -234,6 +236,9 @@
 		<Unit filename="/home/emil/code/cuda-test2/src/renderer/device_mesh.cuh">
 			<Option target="renderer"/>
 		</Unit>
+		<Unit filename="/home/emil/code/cuda-test2/src/renderer/device_stack.cuh">
+			<Option target="renderer"/>
+		</Unit>
 		<Unit filename="/home/emil/code/cuda-test2/src/renderer/kd_tree.cuh">
 			<Option target="renderer"/>
 		</Unit>
@@ -258,7 +263,7 @@
 		<Unit filename="/home/emil/code/cuda-test2/src/shader_tools/GLSLShader.h">
 			<Option target="renderer_bin"/>
 		</Unit>
-		<Unit filename="/home/emil/code/cuda-test2/test/test.cpp">
+		<Unit filename="/home/emil/code/cuda-test2/test/test.cu">
 			<Option target="Test"/>
 		</Unit>
 		<Unit filename="/home/emil/code/cuda-test2/CMakeLists.txt">
