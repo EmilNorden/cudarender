@@ -35,14 +35,16 @@ __device__ int rgbToInt(float r, float g, float b) {
     r = clamp(r, 0.0f, 1.0f) * 255;
     g = clamp(g, 0.0f, 1.0f) * 255;
     b = clamp(b, 0.0f, 1.0f) * 255;
-    return (int(b) << 16) | (int(g) << 8) | int(r);
+    return (int(255) << 24) | (int(b) << 16) | (int(g) << 8) | int(r);
 }
 
 // convert 8-bit integer to floating point rgb color
-__device__ void int_to_rgb(int color, glm::vec3 &out_color) {
-    out_color.x = static_cast<float>(color & 0xFF) / 255.0f;
-    out_color.y = static_cast<float>((color & 0xFF00) >> 8) / 255.0f;
-    out_color.z = static_cast<float>((color & 0xFF0000) >> 16) / 255.0f;
+__device__ glm::vec3 int_to_rgb(int color) {
+    auto r = static_cast<float>(color & 0xFF) / 255.0f;
+    auto g = static_cast<float>((color & 0xFF00) >> 8) / 255.0f;
+    auto b = static_cast<float>((color & 0xFF0000) >> 16) / 255.0f;
+
+    return glm::vec3(r, g, b);
 }
 
 __device__ bool hit_sphere(const WorldSpaceRay &ray) {
@@ -81,7 +83,7 @@ __device__ bool hit_sphere(const WorldSpaceRay &ray) {
 
 
 __global__ void
-cudaRender(unsigned int *g_odata, Camera *camera, Scene *scene, RandomGeneratorPool *random_pool, int width, int height,
+cudaRender(float *g_odata, Camera *camera, Scene *scene, RandomGeneratorPool *random_pool, int width, int height,
            size_t sample) {
     int tx = threadIdx.x;
     int ty = threadIdx.y;
@@ -101,7 +103,7 @@ cudaRender(unsigned int *g_odata, Camera *camera, Scene *scene, RandomGeneratorP
     //uchar4 c4 = make_uchar4((x & 0x20) ? 100 : 0, 0, (y & 0x20) ? 100 : 0, 0);
     // g_odata[y*width + x] = rgbToInt(c4.z, c4.y, c4.x);
 
-    if (x < width && y < height && sample < 500) {
+    if (x < width && y < height) {
         // auto ray = camera->cast_ray(x, y);
         auto ray = camera->cast_perturbed_ray(x, y, random);
 
@@ -109,24 +111,16 @@ cudaRender(unsigned int *g_odata, Camera *camera, Scene *scene, RandomGeneratorP
         auto color = scene->hit(ray);
 
         glm::vec3 previous_color;
-        int_to_rgb( sample == 0 ? 0 : g_odata[y * width + x], previous_color);
 
-        color = ((previous_color * (float)sample) + color) / (sample + 1.0f);
-        g_odata[y * width + x] = rgbToInt(color.x, color.y, color.z);
+        auto pixel_index = y * (width*4) + (x*4);
+
+        g_odata[pixel_index] = ((g_odata[pixel_index] * (float)sample) + color.x) / (sample + 1.0f);
+        g_odata[pixel_index + 1] = ((g_odata[pixel_index + 1] * (float)sample) + color.y) / (sample + 1.0f);
+        g_odata[pixel_index + 2] = ((g_odata[pixel_index + 2] * (float)sample) + color.z) / (sample + 1.0f);
+        g_odata[pixel_index + 3] = 1.0;
 
         //auto previous_r = previous_color & 0x000000
 //         g_odata[y*width + x] = ((previous_color * sample) + rgbToInt(color.x, color.y, color.z)) / (sample + 1);
-
-        /*auto factor_x = (x / (float)width);
-        auto factor_y = (y / (float)height);
-        if(hit) {
-            g_odata[y*width + x] = rgbToInt(factor_x * 255, 0, factor_y * 255);
-        }
-        else {
-            auto color = scene->get_color();
-            g_odata[y*width + x] = rgbToInt(color.x * 255, color.y * 255, color.z * 255);
-        }*/
-
     }
 
 }
@@ -134,7 +128,7 @@ cudaRender(unsigned int *g_odata, Camera *camera, Scene *scene, RandomGeneratorP
 void Renderer::render(Camera *camera, Scene *scene, RandomGeneratorPool *random, int width, int height, size_t sample) {
     dim3 block(16, 16, 1);
     dim3 grid(width / block.x, std::ceil(height / (float) block.y), 1);
-    cudaRender<<<grid, block, 0>>>((unsigned int *) m_cuda_render_buffer, camera, scene, random, width, height, sample);
+    cudaRender<<<grid, block, 0>>>((float*) m_cuda_render_buffer, camera, scene, random, width, height, sample);
 
     cudaArray *texture_ptr;
     cuda_assert(cudaGraphicsMapResources(1, &m_cuda_tex_resource, 0));
@@ -143,7 +137,7 @@ void Renderer::render(Camera *camera, Scene *scene, RandomGeneratorPool *random,
     // TODO: Havent we already calculated this?
     int num_texels = width * height;
     int num_values = num_texels * 4;
-    int size_tex_data = sizeof(GLubyte) * num_values;
+    int size_tex_data = sizeof(GLfloat) * num_values;
     cuda_assert(cudaMemcpyToArray(texture_ptr, 0, 0, m_cuda_render_buffer, size_tex_data, cudaMemcpyDeviceToDevice));
     cuda_assert(cudaGraphicsUnmapResources(1, &m_cuda_tex_resource, 0));
 }
@@ -161,7 +155,7 @@ void Renderer::allocate_render_buffer(int width, int height) {
         cudaFree(m_cuda_render_buffer);
     }
 
-    auto buffer_size = width * height * 4 * sizeof(GLubyte); // Is GLubyte ever larger than 1?
+    auto buffer_size = width * height * 4 * sizeof(GLfloat); // Is GLubyte ever larger than 1?
     cuda_assert(cudaMalloc(&m_cuda_render_buffer, buffer_size));
 }
 

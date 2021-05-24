@@ -82,14 +82,14 @@ static const char *glsl_drawtex_vertshader_src =
 
 static const char *glsl_drawtex_fragshader_src =
         "#version 330 core\n"
-        "uniform usampler2D tex;\n"
+        "uniform sampler2D tex;\n"
         "in vec3 ourColor;\n"
         "in vec2 ourTexCoord;\n"
         "out vec4 color;\n"
         "void main()\n"
         "{\n"
         "   	vec4 c = texture(tex, ourTexCoord);\n"
-        "   	color = c / 255.0;\n"
+        "   	color = c;\n"
         "}\n";
 
 /*
@@ -128,7 +128,7 @@ void create_gl_texture(GLuint *gl_tex, unsigned int size_x, unsigned int size_y)
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8UI_EXT, size_x, size_y, 0, GL_RGBA_INTEGER_EXT, GL_UNSIGNED_BYTE, NULL);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, size_x, size_y, 0, GL_RGBA, GL_FLOAT, NULL);
 
     check_for_gl_errors();
 }
@@ -150,7 +150,8 @@ void init_gl_buffers() {
     check_for_gl_errors();
 }
 
-void display(Camera *camera, Scene *scene, Renderer &renderer, GlWindow &window, RandomGeneratorPool *random, size_t sample) {
+void display(Camera *camera, Scene *scene, Renderer &renderer, GlWindow &window, RandomGeneratorPool *random,
+             size_t sample) {
     renderer.render(camera, scene, random, WIDTH, HEIGHT, sample);
     glfwPollEvents();
 
@@ -238,12 +239,13 @@ int main() {
     spheres.push_back(s2);
 
 
-    Camera *camera;
-    cudaMallocManaged(&camera, sizeof(Camera));
-    new(camera) Camera;
+    Camera *camera = create_device_type<Camera>();
 
-    camera->set_position(glm::vec3(0.0, 0.0, 0.0075));
-    camera->set_direction(glm::vec3(0.0, 0.0, -1.0));
+    float rot = 1.45f;
+    auto camera_position = glm::vec3(glm::cos(rot) * 0.0075f, 0.0000, glm::sin(rot) * 0.0075f);
+    auto camera_direction = glm::normalize(glm::vec3(0.0, 0.0, 0.0f) - camera_position);
+    camera->set_position(camera_position);
+    camera->set_direction(camera_direction);
     camera->set_up(glm::vec3(0.0, 1.0, 0.0));
     camera->set_field_of_view(90.0 * (3.1415 / 180.0));
     camera->set_blur_radius(0.0004);
@@ -274,7 +276,7 @@ int main() {
     size_t sample = 0;
     while (!window.should_close()) {
 
-        /*auto camera_position = glm::vec3(glm::cos(rotation) * 0.0075f, 0.0012, glm::sin(rotation) * 0.0075f);
+        /*auto camera_position = glm::vec3(glm::cos(rotation) * 0.0075f, 0.00, glm::sin(rotation) * 0.0075f);
         auto camera_direction = glm::normalize(glm::vec3(0.0, 0.0, 0.0f) - camera_position);
         camera->set_position(camera_position);
         camera->set_direction(camera_direction);
@@ -299,6 +301,8 @@ int main() {
             total_duration = 0;
         }
         rotation += frame_duration.count() * 0.0005;
+
+        check_for_gl_errors();
     }
 
     cudaFree(camera);

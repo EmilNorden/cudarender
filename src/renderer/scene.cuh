@@ -26,7 +26,7 @@ public:
     }
 
     __device__ glm::vec3 hit(const WorldSpaceRay &ray) {
-        auto result_color = glm::vec3(1.0f, 1.0f, 1.0f);
+        auto result_color = glm::vec3(0.0f, 0.0f, 0.0f);
         auto best_distance = FLT_MAX;
         /*for(int i = 0; i < m_root.sphere_count; ++i) {
             float hit_distance = 0.0f;

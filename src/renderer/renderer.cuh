@@ -27,7 +27,7 @@ public:
 
     void render(int width, int height, const Camera &camera, const Scene &scene);
 
-    unsigned int *buffer() { return (unsigned int *) m_cuda_render_buffer; }
+    float *buffer() { return (float *) m_cuda_render_buffer; }
 
 private:
     void allocate_render_buffer(int width, int height);
