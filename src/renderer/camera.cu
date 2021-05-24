@@ -1,4 +1,5 @@
 #include "camera.cuh"
+#include "device_random.cuh"
 
 #define PI 3.14159265359
 
@@ -16,19 +17,24 @@ __device__ WorldSpaceRay Camera::cast_ray(size_t x, size_t y) const
     // ray.dist = DBL_MAX;
 }
 
-/*void Camera::cast_perturbed_ray(Ray &ray, size_t x, size_t y, std::mt19937 &rand) const
+__device__ WorldSpaceRay Camera::cast_perturbed_ray(size_t x, size_t y, RandomGenerator& random) const
 {
-    cast_ray(ray, x, y);
-    glm::vec3 focus_point = m_position + ray.m_direction * m_focal_length;
+    auto ray = cast_ray(x, y);
+    glm::vec3 focus_point = m_position + ray.direction() * m_focal_length;
 
-    std::uniform_real_distribution<float> distribution(0, 1);
+    //std::uniform_real_distribution<float> distribution(0, 1);
 
-    float angle = distribution(rand) * PI * 2.0f;
-    float length = distribution(rand) * m_blur_radius;
+    float angle = random.value() * PI * 2.0f;
+    float length = random.value() * m_blur_radius;
 
-    ray.m_origin = m_position + (m_u * std::sin(angle) * length) + (m_v * std::cos(angle) * length);
-    ray.m_direction = glm::normalize(focus_point - ray.m_origin);
-}*/
+    auto origin = m_position + (m_u * std::sin(angle) * length) + (m_v * std::cos(angle) * length);
+    auto direction = glm::normalize(focus_point - origin);
+
+    return WorldSpaceRay{
+        origin,
+        direction
+    };
+}
 
 glm::vec2 Camera::project_onto_image_plane(const glm::vec3 &world_coord) const
 {

@@ -3,6 +3,8 @@
 
 #include "ray.cuh"
 
+class RandomGenerator;
+
 class Camera {
 public:
     __device__ __host__ Camera()
@@ -67,10 +69,10 @@ public:
     }
 
     [[nodiscard]] __device__ WorldSpaceRay cast_ray(size_t x, size_t y) const;
-    /*void cast_perturbed_ray(Ray& ray,
+    [[nodiscard]] __device__ WorldSpaceRay cast_perturbed_ray(
                             size_t x,
                             size_t y,
-                            std::mt19937& rand) const;*/
+                            RandomGenerator& random) const;
 
     [[nodiscard]] glm::vec2 project_onto_image_plane(const glm::vec3& world_coord) const;
 

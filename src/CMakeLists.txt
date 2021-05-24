@@ -19,6 +19,7 @@ add_library(renderer
         renderer/device_mesh_loader.cuh
         renderer/device_mesh.cu
         renderer/device_mesh.cuh
+        renderer/device_random.cu
         renderer/device_random.cuh
         renderer/device_stack.cuh
         renderer/device_texture.cu

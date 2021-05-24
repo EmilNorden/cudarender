@@ -15,6 +15,7 @@
 #include "renderer/scene.cuh"
 #include "content/model_loader.h"
 #include "renderer/device_mesh_loader.cuh"
+#include "renderer/device_random.cuh"
 
 #if defined(RENDER_DEBUG)
 #define DEBUG_ASSERT_SDL(x) {                                   \
@@ -149,8 +150,8 @@ void init_gl_buffers() {
     check_for_gl_errors();
 }
 
-void display(Camera *camera, Scene *scene, Renderer &renderer, GlWindow &window) {
-    renderer.render(camera, scene, WIDTH, HEIGHT);
+void display(Camera *camera, Scene *scene, Renderer &renderer, GlWindow &window, RandomGeneratorPool *random) {
+    renderer.render(camera, scene, random, WIDTH, HEIGHT);
     glfwPollEvents();
 
 
@@ -203,15 +204,21 @@ void print_cuda_device_info() {
 
 }
 
-std::vector<TriangleFace> faces_from_indices(const std::vector<int>& indices) {
+std::vector<TriangleFace> faces_from_indices(const std::vector<int> &indices) {
     std::vector<TriangleFace> faces;
-    for(int i = 0; i < indices.size(); i += 3) {
-        faces.push_back({indices[i], indices[i+1], indices[i + 2]});
+    for (int i = 0; i < indices.size(); i += 3) {
+        faces.push_back({indices[i], indices[i + 1], indices[i + 2]});
     }
 
     return faces;
 }
 
+template<typename T, typename... Args>
+T *create_device_type(Args &&... args) {
+    T *object;
+    cudaMallocManaged(&object, sizeof(T));
+    return new(object) T(std::forward<Args>(args)...);
+}
 
 int main() {
     init_glfw();
@@ -235,12 +242,12 @@ int main() {
     cudaMallocManaged(&camera, sizeof(Camera));
     new(camera) Camera;
 
-    camera->set_position(glm::vec3(0.0, 0.0, 10.0));
-    camera->set_direction(glm::vec3(0.0, 0.0,-1.0));
+    camera->set_position(glm::vec3(0.0, 0.0, 0.0075));
+    camera->set_direction(glm::vec3(0.0, 0.0, -1.0));
     camera->set_up(glm::vec3(0.0, 1.0, 0.0));
     camera->set_field_of_view(90.0 * (3.1415 / 180.0));
     camera->set_blur_radius(0.0);
-    camera->set_focal_length(1.0);
+    camera->set_focal_length(0.0075);
     camera->set_shutter_speed(0.0);
     camera->set_resolution(glm::vec2(WIDTH, HEIGHT));
     camera->update();
@@ -258,6 +265,8 @@ int main() {
     new(scene) Scene;
     scene->build(spheres, meshez);
 
+    // auto random = create_random_generator_pool(2048, 123);
+    auto random = create_device_type<RandomGeneratorPool>(2048, 123);
 
     double rotation = 0.0;
     double total_duration = 0.0f;
@@ -271,16 +280,18 @@ int main() {
         camera->set_direction(camera_direction);
         camera->update();
         auto start = std::chrono::high_resolution_clock::now();
-        display(camera, scene, rend, window);
+        display(camera, scene, rend, window, random);
         auto end = std::chrono::high_resolution_clock::now();
         auto frame_duration = std::chrono::duration<double, std::milli>(end - start);
         frame_counter++;
-        if(frame_duration.count() > max_duration) {
+        if (frame_duration.count() > max_duration) {
             max_duration = frame_duration.count();
         }
         total_duration += frame_duration.count();
         std::cout << '\r' << "Frame time: " << frame_duration.count() << "ms\t\t Avg (10 frames): "
-                  << (total_duration / frame_counter) << "ms\t\t Max: " << max_duration << "ms\tt Camera: " << camera_position.x << "," << camera_position.y << "," << camera_position.z << "                    " << std::flush;
+                  << (total_duration / frame_counter) << "ms\t\t Max: " << max_duration << "ms\tt Camera: "
+                  //<< camera_position.x << "," << camera_position.y << "," << camera_position.z << "                    "
+                  << std::flush;
 
         if (frame_counter == 10) {
             frame_counter = 0;

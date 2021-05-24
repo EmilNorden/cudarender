@@ -77,7 +77,7 @@ __device__ bool hit_sphere(const WorldSpaceRay& ray) {
 
 
 __global__ void
-cudaRender(unsigned int *g_odata, Camera *camera, Scene *scene, int width, int height)
+cudaRender(unsigned int *g_odata, Camera *camera, Scene *scene, RandomGeneratorPool *random_pool, int width, int height)
 {
     int tx = threadIdx.x;
     int ty = threadIdx.y;
@@ -86,11 +86,20 @@ cudaRender(unsigned int *g_odata, Camera *camera, Scene *scene, int width, int h
     int x = blockIdx.x*bw + tx;
     int y = blockIdx.y*bh + ty;
 
+    auto threads_per_block = bw * bh;
+    auto thread_num_in_block = tx + bw * ty;
+    auto block_num_in_grid = blockIdx.x + gridDim.x * blockIdx.y;
+
+    // auto global_thread_id = block_num_in_grid * threads_per_block + thread_num_in_block;
+    auto global_block_id = block_num_in_grid;
+    auto random = random_pool->get_generator(global_block_id);
+
     //uchar4 c4 = make_uchar4((x & 0x20) ? 100 : 0, 0, (y & 0x20) ? 100 : 0, 0);
     // g_odata[y*width + x] = rgbToInt(c4.z, c4.y, c4.x);
 
     if(x < width && y < height) {
-        auto ray = camera->cast_ray(x, y);
+        // auto ray = camera->cast_ray(x, y);
+        auto ray = camera->cast_perturbed_ray(x, y, random);
 
         //auto hit = hit_sphere(ray);
         auto color = scene->hit(ray);
@@ -110,10 +119,10 @@ cudaRender(unsigned int *g_odata, Camera *camera, Scene *scene, int width, int h
 
 }
 
-void Renderer::render(Camera* camera, Scene *scene, int width, int height) {
+void Renderer::render(Camera* camera, Scene *scene, RandomGeneratorPool *random, int width, int height) {
     dim3 block(16, 16, 1);
     dim3 grid(width / block.x, std::ceil(height / (float)block.y), 1);
-    cudaRender<<<grid, block, 0>>>((unsigned int*)m_cuda_render_buffer, camera, scene, width, height);
+    cudaRender<<<grid, block, 0>>>((unsigned int*)m_cuda_render_buffer, camera, scene, random, width, height);
 
     cudaArray *texture_ptr;
     cuda_assert(cudaGraphicsMapResources(1, &m_cuda_tex_resource, 0));
