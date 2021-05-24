@@ -51,6 +51,8 @@ renderer/scene.cuh
 /home/emil/code/cuda-test2/src/renderer/scene.cuh
 content/model_loader.h
 /home/emil/code/cuda-test2/src/content/model_loader.h
+renderer/device_mesh_loader.cuh
+/home/emil/code/cuda-test2/src/renderer/device_mesh_loader.cuh
 
 /home/emil/code/cuda-test2/src/renderer/aabb.cuh
 glm/glm.hpp
@@ -66,9 +68,9 @@ ray.cuh
 glm/glm.hpp
 -
 
+/home/emil/code/cuda-test2/src/renderer/device_material.cuh
+
 /home/emil/code/cuda-test2/src/renderer/device_mesh.cuh
-thrust/device_vector.h
--
 glm/glm.hpp
 -
 vector
@@ -79,6 +81,16 @@ ray.cuh
 /home/emil/code/cuda-test2/src/renderer/ray.cuh
 aabb.cuh
 /home/emil/code/cuda-test2/src/renderer/aabb.cuh
+device_material.cuh
+/home/emil/code/cuda-test2/src/renderer/device_material.cuh
+
+/home/emil/code/cuda-test2/src/renderer/device_mesh_loader.cuh
+device_mesh.cuh
+/home/emil/code/cuda-test2/src/renderer/device_mesh.cuh
+vector
+-
+string
+-
 
 /home/emil/code/cuda-test2/src/renderer/kd_tree.cuh
 glm/glm.hpp

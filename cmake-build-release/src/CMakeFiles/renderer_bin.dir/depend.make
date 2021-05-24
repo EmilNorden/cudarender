@@ -10,7 +10,9 @@ src/CMakeFiles/renderer_bin.dir/main.cu.o: ../src/main.cu
 src/CMakeFiles/renderer_bin.dir/main.cu.o: ../src/renderer/aabb.cuh
 src/CMakeFiles/renderer_bin.dir/main.cu.o: ../src/renderer/camera.cuh
 src/CMakeFiles/renderer_bin.dir/main.cu.o: ../src/renderer/coordinates.cuh
+src/CMakeFiles/renderer_bin.dir/main.cu.o: ../src/renderer/device_material.cuh
 src/CMakeFiles/renderer_bin.dir/main.cu.o: ../src/renderer/device_mesh.cuh
+src/CMakeFiles/renderer_bin.dir/main.cu.o: ../src/renderer/device_mesh_loader.cuh
 src/CMakeFiles/renderer_bin.dir/main.cu.o: ../src/renderer/kd_tree.cuh
 src/CMakeFiles/renderer_bin.dir/main.cu.o: ../src/renderer/ray.cuh
 src/CMakeFiles/renderer_bin.dir/main.cu.o: ../src/renderer/renderer.cuh

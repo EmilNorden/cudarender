@@ -230,13 +230,28 @@
 		<Unit filename="/home/emil/code/cuda-test2/src/renderer/cuda_utils.cuh">
 			<Option target="renderer"/>
 		</Unit>
+		<Unit filename="/home/emil/code/cuda-test2/src/renderer/device_material.cuh">
+			<Option target="renderer"/>
+		</Unit>
 		<Unit filename="/home/emil/code/cuda-test2/src/renderer/device_mesh.cu">
 			<Option target="renderer"/>
 		</Unit>
 		<Unit filename="/home/emil/code/cuda-test2/src/renderer/device_mesh.cuh">
 			<Option target="renderer"/>
 		</Unit>
+		<Unit filename="/home/emil/code/cuda-test2/src/renderer/device_mesh_loader.cu">
+			<Option target="renderer"/>
+		</Unit>
+		<Unit filename="/home/emil/code/cuda-test2/src/renderer/device_mesh_loader.cuh">
+			<Option target="renderer"/>
+		</Unit>
 		<Unit filename="/home/emil/code/cuda-test2/src/renderer/device_stack.cuh">
+			<Option target="renderer"/>
+		</Unit>
+		<Unit filename="/home/emil/code/cuda-test2/src/renderer/device_texture.cu">
+			<Option target="renderer"/>
+		</Unit>
+		<Unit filename="/home/emil/code/cuda-test2/src/renderer/device_texture.cuh">
 			<Option target="renderer"/>
 		</Unit>
 		<Unit filename="/home/emil/code/cuda-test2/src/renderer/kd_tree.cuh">
@@ -271,6 +286,9 @@
 		</Unit>
 		<Unit filename="/home/emil/code/cuda-test2/src/CMakeLists.txt">
 			<Option virtualFolder="CMake Files\src\"/>
+		</Unit>
+		<Unit filename="/home/emil/code/cuda-test2/cmake/FindFreeImage.cmake">
+			<Option virtualFolder="CMake Files\cmake\"/>
 		</Unit>
 		<Unit filename="/home/emil/code/cuda-test2/cmake/FindGLM.cmake">
 			<Option virtualFolder="CMake Files\cmake\"/>

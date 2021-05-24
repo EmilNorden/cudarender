@@ -7,12 +7,13 @@
 #include "sphere.cuh"
 #include "ray.cuh"
 #include "device_mesh.cuh"
+#include "device_texture.cuh"
 
 #define EPSILON 9.99999997475243E-07
 
 class Scene {
 public:
-    __device__ glm::vec3  get_color() { return glm::vec3(1.0f, 0.0f, 0.0f); }
+    __device__ glm::vec3 get_color() { return glm::vec3(1.0f, 0.0f, 0.0f); }
 
     void build(std::vector<Sphere> objects, std::vector<IndexedDeviceMesh> meshes) {
         cudaMallocManaged(&m_root.spheres, sizeof(Sphere) * objects.size());
@@ -24,7 +25,7 @@ public:
         m_root.mesh_count = meshes.size();
     }
 
-    __device__ glm::vec3 hit(const WorldSpaceRay& ray) {
+    __device__ glm::vec3 hit(const WorldSpaceRay &ray) {
         auto result_color = glm::vec3(0.0f, 0.0f, 0.0f);
         auto best_distance = FLT_MAX;
         /*for(int i = 0; i < m_root.sphere_count; ++i) {
@@ -36,7 +37,7 @@ public:
             }
         }*/
 
-        for(int i = 0; i < m_root.mesh_count; ++i) {
+        for (int i = 0; i < m_root.mesh_count; ++i) {
             /*
             auto faces = m_root.meshes[i].faces();
             for(int j = 0; j < m_root.meshes[i].face_count(); ++j) {
@@ -56,11 +57,22 @@ public:
             }
              */
             float hit_distance = 0.0f;
-            if(m_root.meshes[i].intersect(ray, hit_distance)) {
-                // if(hit_distance < best_distance) {
+            Intersection intersection;
+            if (m_root.meshes[i].intersect(ray, intersection, hit_distance)) {
+                if (hit_distance < best_distance) {
                     best_distance = hit_distance;
-                    result_color = glm::vec3(0.0f, 1.0f, 0.0f);
-                // }
+
+                    auto texcoord0 = m_root.meshes[i].texture_coordinates()[intersection.i0];
+                    auto texcoord1 = m_root.meshes[i].texture_coordinates()[intersection.i1];
+                    auto texcoord2 = m_root.meshes[i].texture_coordinates()[intersection.i2];
+
+                    float w = 1.0f - intersection.u - intersection.v;
+
+                    auto texture_uv = texcoord0 * w + texcoord1 * intersection.u + texcoord2 * intersection.v;
+
+                    result_color = m_root.meshes[i].material().diffuse()->sample(
+                            texture_uv); // glm::vec3(0.0f, 1.0f, 0.0f);
+                }
             }
 
         }
@@ -70,7 +82,8 @@ public:
 
 private:
 
-    __device__ bool hit_triangle(const WorldSpaceRay& ray, glm::vec3 v1, glm::vec3 v2, glm::vec3 v3, float &out_distance) {
+    __device__ bool
+    hit_triangle(const WorldSpaceRay &ray, glm::vec3 v1, glm::vec3 v2, glm::vec3 v3, float &out_distance) {
         // Find vectors for two edges sharing V1
         glm::vec3 e1 = v2 - v1;
         glm::vec3 e2 = v3 - v1;
@@ -126,15 +139,15 @@ private:
         return false;
     }
 
-    __device__ bool hit_sphere(const WorldSpaceRay& ray, glm::vec3 position, float radius, float& out_distance) {
+    __device__ bool hit_sphere(const WorldSpaceRay &ray, glm::vec3 position, float radius, float &out_distance) {
 
-        auto squared_radius = radius*radius;
+        auto squared_radius = radius * radius;
         auto L = position - ray.origin().as_vec3();
         auto tca = glm::dot(L, ray.direction());
 
         auto d2 = glm::dot(L, L) - tca * tca;
 
-        if(d2 > squared_radius) {
+        if (d2 > squared_radius) {
             return false;
         }
 
@@ -142,15 +155,15 @@ private:
         auto t0 = tca - thc;
         auto t1 = tca + thc;
 
-        if(t0 > t1) {
+        if (t0 > t1) {
             auto temp = t0;
             t0 = t1;
             t1 = temp;
         }
 
-        if(t0 < 0.0) {
+        if (t0 < 0.0) {
             t0 = t1;
-            if(t0 < 0.0) {
+            if (t0 < 0.0) {
                 return false;
             }
         }
@@ -158,16 +171,18 @@ private:
         out_distance = t0;
         return true;
     }
+
     struct TreeNode {
         TreeNode()
-                :  location(glm::vec3(0.0f, 0.0f, 0.0f)), left(nullptr), right(nullptr), spheres(nullptr), sphere_count(0) {
+                : location(glm::vec3(0.0f, 0.0f, 0.0f)), left(nullptr), right(nullptr), spheres(nullptr),
+                  sphere_count(0) {
         }
 
         glm::vec3 location;
         TreeNode *left;
         TreeNode *right;
 
-        Sphere* spheres;
+        Sphere *spheres;
         int sphere_count;
 
         IndexedDeviceMesh *meshes;

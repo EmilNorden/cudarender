@@ -6,6 +6,11 @@
 #include <vector>
 #include <glm/glm.hpp>
 
+class Material {
+public:
+private:
+};
+
 class Mesh {
 public:
     Mesh(const std::vector<glm::vec3>& vertices, const std::vector<int>& indices);
@@ -25,6 +30,7 @@ public:
     const std::vector<Mesh>& meshes() const { return m_meshes; }
 private:
     std::vector<Mesh> m_meshes;
+    std::vector<Material> m_materials;
 };
 
 

@@ -12,16 +12,31 @@ src/CMakeFiles/renderer.dir/renderer/cuda_utils.cu.o
 src/CMakeFiles/renderer.dir/renderer/device_mesh.cu.o
  /home/emil/code/cuda-test2/src/renderer/aabb.cuh
  /home/emil/code/cuda-test2/src/renderer/coordinates.cuh
+ /home/emil/code/cuda-test2/src/renderer/device_material.cuh
  /home/emil/code/cuda-test2/src/renderer/device_mesh.cu
  /home/emil/code/cuda-test2/src/renderer/device_mesh.cuh
  /home/emil/code/cuda-test2/src/renderer/device_stack.cuh
  /home/emil/code/cuda-test2/src/renderer/kd_tree.cuh
  /home/emil/code/cuda-test2/src/renderer/ray.cuh
+src/CMakeFiles/renderer.dir/renderer/device_mesh_loader.cu.o
+ /home/emil/code/cuda-test2/src/renderer/aabb.cuh
+ /home/emil/code/cuda-test2/src/renderer/coordinates.cuh
+ /home/emil/code/cuda-test2/src/renderer/device_material.cuh
+ /home/emil/code/cuda-test2/src/renderer/device_mesh.cuh
+ /home/emil/code/cuda-test2/src/renderer/device_mesh_loader.cu
+ /home/emil/code/cuda-test2/src/renderer/device_mesh_loader.cuh
+ /home/emil/code/cuda-test2/src/renderer/device_texture.cuh
+ /home/emil/code/cuda-test2/src/renderer/kd_tree.cuh
+ /home/emil/code/cuda-test2/src/renderer/ray.cuh
+src/CMakeFiles/renderer.dir/renderer/device_texture.cu.o
+ /home/emil/code/cuda-test2/src/renderer/device_texture.cu
+ /home/emil/code/cuda-test2/src/renderer/device_texture.cuh
 src/CMakeFiles/renderer.dir/renderer/renderer.cu.o
  /home/emil/code/cuda-test2/src/renderer/aabb.cuh
  /home/emil/code/cuda-test2/src/renderer/camera.cuh
  /home/emil/code/cuda-test2/src/renderer/coordinates.cuh
  /home/emil/code/cuda-test2/src/renderer/cuda_utils.cuh
+ /home/emil/code/cuda-test2/src/renderer/device_material.cuh
  /home/emil/code/cuda-test2/src/renderer/device_mesh.cuh
  /home/emil/code/cuda-test2/src/renderer/kd_tree.cuh
  /home/emil/code/cuda-test2/src/renderer/ray.cuh

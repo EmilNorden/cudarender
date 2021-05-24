@@ -82,7 +82,9 @@ __device__ bool hit_aabb(const WorldSpaceRay &ray, const AABB &aabb, float &out_
     return true;
 }
 
-__device__ bool hit_triangle(const WorldSpaceRay &ray, glm::vec3 v1, glm::vec3 v2, glm::vec3 v3, float &out_distance) {
+__device__ bool
+hit_triangle(const WorldSpaceRay &ray, glm::vec3 v1, glm::vec3 v2, glm::vec3 v3, float &out_u, float &out_v,
+             float &out_distance) {
     // Find vectors for two edges sharing V1
     glm::vec3 e1 = v2 - v1;
     glm::vec3 e2 = v3 - v1;
@@ -129,8 +131,8 @@ __device__ bool hit_triangle(const WorldSpaceRay &ray, glm::vec3 v1, glm::vec3 v
     if (t > EPSILON) { // ray intersection
         out_distance = t;
         // *dist = t;
-        // *result_u = u;
-        // *result_v = v;
+        out_u = u;
+        out_v = v;
         return true;
     }
 
@@ -139,8 +141,10 @@ __device__ bool hit_triangle(const WorldSpaceRay &ray, glm::vec3 v1, glm::vec3 v
 }
 
 __host__ IndexedDeviceMesh::IndexedDeviceMesh(const std::vector<glm::vec3> &vertices,
-                                              const std::vector<TriangleFace> &faces)
-        : m_bounds(vertices) {
+                                              const std::vector<TriangleFace> &faces,
+                                              const std::vector<glm::vec2> &tex_coords,
+                                              const DeviceMaterial &material)
+        : m_bounds(vertices), m_material(material) {
 
     // cudaMalloc(&m_vertices, sizeof(glm::vec3) * vertices.size());
     cudaMallocManaged(&m_vertices, sizeof(glm::vec3) * vertices.size());
@@ -149,10 +153,10 @@ __host__ IndexedDeviceMesh::IndexedDeviceMesh(const std::vector<glm::vec3> &vert
 
     // cudaMalloc(&m_faces, sizeof(TriangleFace) * faces.size());
 
-    // We shouldnt need this anymore, this goes into the kdtree
-    cudaMallocManaged(&m_faces, sizeof(TriangleFace) * faces.size());
-    cudaMemcpy(m_faces, faces.data(), sizeof(TriangleFace) * faces.size(), cudaMemcpyHostToHost);
-    m_face_count = faces.size();
+    cudaMalloc(&m_tex_coords, sizeof(glm::vec2) * tex_coords.size());
+    cudaMemcpy(m_tex_coords, tex_coords.data(), sizeof(glm::vec2) * tex_coords.size(), cudaMemcpyHostToDevice);
+    m_tex_coord_count = tex_coords.size();
+
 
     cudaMallocManaged(&m_root, sizeof(TreeNode));
     auto faces_copy = faces;
@@ -184,12 +188,6 @@ void IndexedDeviceMesh::build_node(TreeNode &node, std::vector<TriangleFace> &fa
     }
 
     auto axis = static_cast<int>(current_axis);
-
-    static glm::vec3 axis_normals[3] = {
-            glm::vec3(1.0f, 0.0f, 0.0f),
-            glm::vec3(0.0f, 1.0f, 0.0f),
-            glm::vec3(0.0f, 0.0f, 1.0f)
-    };
 
     std::sort(faces.begin(), faces.end(), [&](const TriangleFace &a, const TriangleFace &b) {
         // Just use the first vertex for each face.
@@ -249,19 +247,31 @@ __device__ bool is_leaf(TreeNode *node) {
     return node->faces;
 }
 
-__device__ bool intersects_mesh(const WorldSpaceRay &ray, TreeNode *node, glm::vec3 *vertices, float &tmax) {
+__device__ bool
+intersects_mesh(const WorldSpaceRay &ray, TreeNode *node, glm::vec3 *vertices, Intersection &intersection,
+                float &tmax) {
     auto success = false;
     for (auto i = 0; i < node->face_count; ++i) {
-        auto v0 = vertices[node->faces[i].i0];
-        auto v1 = vertices[node->faces[i].i1];
-        auto v2 = vertices[node->faces[i].i2];
+        auto i0 = node->faces[i].i0;
+        auto i1 = node->faces[i].i1;
+        auto i2 = node->faces[i].i2;
+        auto v0 = vertices[i0];
+        auto v1 = vertices[i1];
+        auto v2 = vertices[i2];
 
         float hit_distance = 0.0f;
 
-        auto hit_result = hit_triangle(ray, v0, v1, v2, hit_distance);
+        float u = 0.0f;
+        float v = 0.0f;
+        auto hit_result = hit_triangle(ray, v0, v1, v2, u, v, hit_distance);
 
         if (hit_result && hit_distance < tmax) {
-            // tmax = hit_distance;
+            tmax = hit_distance;
+            intersection.i0 = i0;
+            intersection.i1 = i1;
+            intersection.i2 = i2;
+            intersection.u = u;
+            intersection.v = v;
             success = true;
         }
     }
@@ -328,7 +338,8 @@ CompareRangeWithPlane(const WorldSpaceRay &ray, float tmin, float tmax, TreeNode
 }
 
 
-__device__ bool IndexedDeviceMesh::intersect(const WorldSpaceRay &ray, float &out_distance) {
+__device__ bool
+IndexedDeviceMesh::intersect(const WorldSpaceRay &ray, Intersection &intersection, float &out_distance) {
     out_distance = FLT_MAX;
     float global_tmin = 0.0f;
     float global_tmax = 0.0f;
@@ -343,18 +354,6 @@ __device__ bool IndexedDeviceMesh::intersect(const WorldSpaceRay &ray, float &ou
                        global_tmax
                });
 
-    /*nodes.push({
-        m_root->left,
-        tmin,
-        tmax
-    });
-    nodes.push({
-                       m_root->right,
-                       tmin,
-                       tmax
-               });*/
-
-
     while (!nodes.is_empty()) {
         auto current = nodes.pop();
         auto node = current.node;
@@ -362,7 +361,8 @@ __device__ bool IndexedDeviceMesh::intersect(const WorldSpaceRay &ray, float &ou
         auto tmax = current.tmax;
 
         if (is_leaf(node)) {
-            if (intersects_mesh(ray, node, m_vertices, tmax)) {
+            if (intersects_mesh(ray, node, m_vertices, intersection, tmax)) {
+                out_distance = tmax;
                 return true;
             }
         } else {
@@ -377,8 +377,9 @@ __device__ bool IndexedDeviceMesh::intersect(const WorldSpaceRay &ray, float &ou
                     nodes.push(NodeSearchData{node->left, tmin, tmax});
                     break;
                 case RangePlaneComparison::AboveToBelow:
-                    nodes.push(NodeSearchData{node->right, tmin, thit});
                     nodes.push(NodeSearchData{node->left, thit, tmax});
+                    nodes.push(NodeSearchData{node->right, tmin, thit});
+
                     break;
                 case RangePlaneComparison::BelowToAbove:
                     nodes.push(NodeSearchData{node->right, thit, tmax});
@@ -446,7 +447,9 @@ intersect_leaf(TreeNode *node, const glm::vec3 *vertices, const WorldSpaceRay &r
 
         float hit_distance = 0.0f;
 
-        auto hit_result = hit_triangle(ray, v0, v1, v2, hit_distance);
+        float u = 0.0f;
+        float v = 0.0f;
+        auto hit_result = hit_triangle(ray, v0, v1, v2, u, v, hit_distance);
 
         if (hit_result && hit_distance < tmax) {
             tmax = hit_distance;

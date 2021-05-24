@@ -13,6 +13,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <cuda_gl_interop.h>
+#include "device_random.cuh"
 
 cudaError_t cuda();
 

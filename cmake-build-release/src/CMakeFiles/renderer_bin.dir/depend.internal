@@ -11,7 +11,9 @@ src/CMakeFiles/renderer_bin.dir/main.cu.o
  /home/emil/code/cuda-test2/src/renderer/aabb.cuh
  /home/emil/code/cuda-test2/src/renderer/camera.cuh
  /home/emil/code/cuda-test2/src/renderer/coordinates.cuh
+ /home/emil/code/cuda-test2/src/renderer/device_material.cuh
  /home/emil/code/cuda-test2/src/renderer/device_mesh.cuh
+ /home/emil/code/cuda-test2/src/renderer/device_mesh_loader.cuh
  /home/emil/code/cuda-test2/src/renderer/kd_tree.cuh
  /home/emil/code/cuda-test2/src/renderer/ray.cuh
  /home/emil/code/cuda-test2/src/renderer/renderer.cuh

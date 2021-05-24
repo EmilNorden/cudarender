@@ -35,6 +35,7 @@ set(CMAKE_MAKEFILE_DEPENDS
   "CMakeFiles/3.19.2/CMakeCUDACompiler.cmake"
   "CMakeFiles/3.19.2/CMakeCXXCompiler.cmake"
   "CMakeFiles/3.19.2/CMakeSystem.cmake"
+  "../cmake/FindFreeImage.cmake"
   "../cmake/FindGLM.cmake"
   "../src/CMakeLists.txt"
   "../test/CMakeLists.txt"

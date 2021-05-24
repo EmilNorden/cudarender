@@ -413,6 +413,60 @@ renderer/device_mesh.cu.s:
 	cd /home/emil/code/cuda-test2/cmake-build-release && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/renderer.dir/build.make src/CMakeFiles/renderer.dir/renderer/device_mesh.cu.s
 .PHONY : renderer/device_mesh.cu.s
 
+renderer/device_mesh_loader.o: renderer/device_mesh_loader.cu.o
+
+.PHONY : renderer/device_mesh_loader.o
+
+# target to build an object file
+renderer/device_mesh_loader.cu.o:
+	cd /home/emil/code/cuda-test2/cmake-build-release && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/renderer.dir/build.make src/CMakeFiles/renderer.dir/renderer/device_mesh_loader.cu.o
+.PHONY : renderer/device_mesh_loader.cu.o
+
+renderer/device_mesh_loader.i: renderer/device_mesh_loader.cu.i
+
+.PHONY : renderer/device_mesh_loader.i
+
+# target to preprocess a source file
+renderer/device_mesh_loader.cu.i:
+	cd /home/emil/code/cuda-test2/cmake-build-release && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/renderer.dir/build.make src/CMakeFiles/renderer.dir/renderer/device_mesh_loader.cu.i
+.PHONY : renderer/device_mesh_loader.cu.i
+
+renderer/device_mesh_loader.s: renderer/device_mesh_loader.cu.s
+
+.PHONY : renderer/device_mesh_loader.s
+
+# target to generate assembly for a file
+renderer/device_mesh_loader.cu.s:
+	cd /home/emil/code/cuda-test2/cmake-build-release && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/renderer.dir/build.make src/CMakeFiles/renderer.dir/renderer/device_mesh_loader.cu.s
+.PHONY : renderer/device_mesh_loader.cu.s
+
+renderer/device_texture.o: renderer/device_texture.cu.o
+
+.PHONY : renderer/device_texture.o
+
+# target to build an object file
+renderer/device_texture.cu.o:
+	cd /home/emil/code/cuda-test2/cmake-build-release && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/renderer.dir/build.make src/CMakeFiles/renderer.dir/renderer/device_texture.cu.o
+.PHONY : renderer/device_texture.cu.o
+
+renderer/device_texture.i: renderer/device_texture.cu.i
+
+.PHONY : renderer/device_texture.i
+
+# target to preprocess a source file
+renderer/device_texture.cu.i:
+	cd /home/emil/code/cuda-test2/cmake-build-release && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/renderer.dir/build.make src/CMakeFiles/renderer.dir/renderer/device_texture.cu.i
+.PHONY : renderer/device_texture.cu.i
+
+renderer/device_texture.s: renderer/device_texture.cu.s
+
+.PHONY : renderer/device_texture.s
+
+# target to generate assembly for a file
+renderer/device_texture.cu.s:
+	cd /home/emil/code/cuda-test2/cmake-build-release && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/renderer.dir/build.make src/CMakeFiles/renderer.dir/renderer/device_texture.cu.s
+.PHONY : renderer/device_texture.cu.s
+
 renderer/renderer.o: renderer/renderer.cu.o
 
 .PHONY : renderer/renderer.o
@@ -532,6 +586,12 @@ help:
 	@echo "... renderer/device_mesh.o"
 	@echo "... renderer/device_mesh.i"
 	@echo "... renderer/device_mesh.s"
+	@echo "... renderer/device_mesh_loader.o"
+	@echo "... renderer/device_mesh_loader.i"
+	@echo "... renderer/device_mesh_loader.s"
+	@echo "... renderer/device_texture.o"
+	@echo "... renderer/device_texture.i"
+	@echo "... renderer/device_texture.s"
 	@echo "... renderer/renderer.o"
 	@echo "... renderer/renderer.i"
 	@echo "... renderer/renderer.s"

@@ -103,6 +103,7 @@ test/CMakeFiles/Test.dir/cmake_device_link.o: /usr/lib/x86_64-linux-gnu/libGLEW.
 test/CMakeFiles/Test.dir/cmake_device_link.o: /usr/lib/x86_64-linux-gnu/libOpenGL.so
 test/CMakeFiles/Test.dir/cmake_device_link.o: /usr/lib/x86_64-linux-gnu/libGLX.so
 test/CMakeFiles/Test.dir/cmake_device_link.o: /usr/lib/x86_64-linux-gnu/libGLU.so
+test/CMakeFiles/Test.dir/cmake_device_link.o: /usr/lib/x86_64-linux-gnu/libfreeimage.so
 test/CMakeFiles/Test.dir/cmake_device_link.o: /usr/lib/x86_64-linux-gnu/libglfw.so.3.3
 test/CMakeFiles/Test.dir/cmake_device_link.o: test/CMakeFiles/Test.dir/dlink.txt
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --bold --progress-dir=/home/emil/code/cuda-test2/cmake-build-release/CMakeFiles --progress-num=$(CMAKE_PROGRESS_2) "Linking CUDA device code CMakeFiles/Test.dir/cmake_device_link.o"
@@ -127,6 +128,7 @@ test/Test: /usr/lib/x86_64-linux-gnu/libGLEW.so
 test/Test: /usr/lib/x86_64-linux-gnu/libOpenGL.so
 test/Test: /usr/lib/x86_64-linux-gnu/libGLX.so
 test/Test: /usr/lib/x86_64-linux-gnu/libGLU.so
+test/Test: /usr/lib/x86_64-linux-gnu/libfreeimage.so
 test/Test: /usr/lib/x86_64-linux-gnu/libglfw.so.3.3
 test/Test: test/CMakeFiles/Test.dir/cmake_device_link.o
 test/Test: test/CMakeFiles/Test.dir/link.txt

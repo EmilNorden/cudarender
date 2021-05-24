@@ -14,6 +14,7 @@
 #include "renderer/renderer.cuh"
 #include "renderer/scene.cuh"
 #include "content/model_loader.h"
+#include "renderer/device_mesh_loader.cuh"
 
 #if defined(RENDER_DEBUG)
 #define DEBUG_ASSERT_SDL(x) {                                   \
@@ -229,12 +230,6 @@ int main() {
     spheres.push_back(s1);
     spheres.push_back(s2);
 
-    ModelLoader loader;
-
-    auto model = loader.load("/home/emil/models/1.obj");
-
-    auto faces = faces_from_indices(model->meshes().at(0).indices());
-    IndexedDeviceMesh suzanne{model->meshes().at(0).vertices(), faces};
 
     Camera *camera;
     cudaMallocManaged(&camera, sizeof(Camera));
@@ -250,16 +245,18 @@ int main() {
     camera->set_resolution(glm::vec2(WIDTH, HEIGHT));
     camera->update();
 
-    /*
-     *         /*glm::vec3 v1(0.0f, 1.0f, 10.0f);
-        glm::vec3 v2(1.0f, 0.0f, 10.0f);
-        glm::vec3 v3(-1.0f, 0.0f, 10.0f);*/
-    std::vector<IndexedDeviceMesh> meshes;
-    meshes.push_back(suzanne);
+    DeviceMeshLoader mesh_loader;
+    auto meshez = mesh_loader.load("/home/emil/models/house1/black_smith.obj"); // 0.5 0.35 0.5
+    // auto meshez = mesh_loader.load("/home/emil/models/apple/apple.obj"); // 0.5 0.35 0.5
+    // auto meshez = mesh_loader.load("/home/emil/models/crate/crate1.obj");
+    // auto suzanne = meshez[0];
+
+    //std::vector<IndexedDeviceMesh> meshes;
+    //meshes.push_back(suzanne);
     Scene *scene;
     cudaMallocManaged(&scene, sizeof(Scene));
     new(scene) Scene;
-    scene->build(spheres, meshes);
+    scene->build(spheres, meshez);
 
 
     double rotation = 0.0;
@@ -268,7 +265,7 @@ int main() {
     int frame_counter = 0;
     while (!window.should_close()) {
 
-        auto camera_position = glm::vec3(glm::cos(rotation) * 10.0f, 0.0, glm::sin(rotation) * 10.0f);
+        auto camera_position = glm::vec3(glm::cos(rotation) * 0.0075f, 0.0012, glm::sin(rotation) * 0.0075f);
         auto camera_direction = glm::normalize(glm::vec3(0.0, 0.0, 0.0f) - camera_position);
         camera->set_position(camera_position);
         camera->set_direction(camera_direction);

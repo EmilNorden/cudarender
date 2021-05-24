@@ -1,12 +1,12 @@
 #ifndef RENDERER_DEVICE_MESH_CUH_
 #define RENDERER_DEVICE_MESH_CUH_
 
-#include <thrust/device_vector.h>
 #include <glm/glm.hpp>
 #include <vector>
 #include "kd_tree.cuh"
 #include "ray.cuh"
 #include "aabb.cuh"
+#include "device_material.cuh"
 
 // Forward declarations
 struct TreeNode;
@@ -23,31 +23,48 @@ struct Triangle {
     glm::vec3 v2;
 };
 
+struct Intersection {
+    __device__ Intersection() {}
+    int i0;
+    int i1;
+    int i2;
+    float u;
+    float v;
+};
 
 
 class IndexedDeviceMesh {
 public:
-    __host__ IndexedDeviceMesh(const std::vector<glm::vec3>& vertices, const std::vector<TriangleFace>& faces);
+    __host__ IndexedDeviceMesh(const std::vector<glm::vec3> &vertices, const std::vector<TriangleFace> &faces,
+                               const std::vector<glm::vec2> &tex_coords,
+                               const DeviceMaterial &material);
 
-    __device__ const TriangleFace* faces() const { return m_faces; }
-    __device__ int face_count() const { return m_face_count; }
-    __device__ const glm::vec3* vertices() const { return m_vertices; }
-    __device__ int vertex_count() const { return m_vertex_count; }
+    [[nodiscard]] __device__ const glm::vec3 *vertices() const { return m_vertices; }
 
-    __device__ bool intersect(const WorldSpaceRay& ray, float &out_distance);
+    [[nodiscard]] __device__ int vertex_count() const { return m_vertex_count; }
+
+    [[nodiscard]] __device__ const glm::vec2* texture_coordinates() const { return m_tex_coords; }
+
+    [[nodiscard]] __device__ int texture_coordinate_count() const { return m_tex_coord_count; }
+
+    [[nodiscard]] __device__ DeviceMaterial& material() { return m_material; }
+
+    __device__ bool intersect(const WorldSpaceRay &ray, Intersection &intersection, float &out_distance);
 
 private:
-
+    DeviceMaterial m_material;
     AABB m_bounds;
     TreeNode *m_root;
 
-    std::vector<glm::vec3> m_host_vertices;
-    glm::vec3* m_vertices;
-    int m_vertex_count;
-    TriangleFace* m_faces;
-    int m_face_count;
+    glm::vec3 *m_vertices;
+    int m_vertex_count; // TODO is count needed on anything other than face count?
+    glm::vec2 *m_tex_coords;
+    int m_tex_coord_count;
 
-    void build_node(TreeNode& node, std::vector<TriangleFace>& faces, Axis current_axis);
+
+
+
+    void build_node(TreeNode &node, std::vector<TriangleFace> &faces, Axis current_axis);
 };
 
 #endif

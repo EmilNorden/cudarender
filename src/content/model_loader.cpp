@@ -32,6 +32,10 @@ unique_ptr<Model> ModelLoader::load(const string& path)
     }
 
     // TODO: Load materials
+    for(auto i = 0; i < scene->mNumMaterials; ++i) {
+        load_single_material(scene->mMaterials[i]);
+    }
+
     vector<Mesh> meshes;
     for(auto i = 0; i < scene->mNumMeshes; ++i) {
         std::cout << "  Loading mesh " << i << " (" << scene->mMeshes[i]->mName.C_Str() << ")" << std::endl;
@@ -98,6 +102,82 @@ Mesh ModelLoader::load_single_mesh(aiMesh* mesh) {
                                         bitangents, texture_coords, material);*/
 
     return Mesh{vertices, indices};
+}
+
+void ModelLoader::load_single_material(aiMaterial *material) {
+    aiString name;
+    aiGetMaterialString(material, AI_MATKEY_NAME, &name);
+
+    // std::string cache_key = model_path + "_" + std::string(name.C_Str());
+
+    // if(allow_cached_materials) {
+
+    // 	auto cached_material = m_material_cache.get(cache_key);
+    // 	if(cached_material)
+    // 		return cached_material;
+
+    // }
+
+    // material->Get does NOT return colors as their documentation states.
+    // aiGetMaterialColor does however. Perhaps the same problem exists with
+    // Textures?
+
+    aiColor4D fooo;
+    aiGetMaterialColor(material, AI_MATKEY_COLOR_DIFFUSE, &fooo);
+
+    float refracti;
+    aiGetMaterialFloat(material, AI_MATKEY_REFRACTI, &refracti);
+    // material->Get<float>(AI_MATKEY_REFRACTI, refracti);
+
+    float opacity;
+    aiGetMaterialFloat(material, AI_MATKEY_OPACITY, &opacity);
+    // material->Get<float>(AI_MATKEY_OPACITY, opacity);
+
+    float shininess;
+    aiGetMaterialFloat(material, AI_MATKEY_SHININESS, &shininess);
+    // material->Get<float>(AI_MATKEY_SHININESS, shininess);
+
+    int shading_model;
+    aiGetMaterialInteger(material, AI_MATKEY_SHADING_MODEL, &shading_model);
+    // material->Get<int>(AI_MATKEY_SHADING_MODEL, shading_model);
+
+    aiColor4D ambient_color;
+    aiGetMaterialColor(material, AI_MATKEY_COLOR_AMBIENT, &ambient_color);
+
+    aiColor4D diffuse_color;
+    aiGetMaterialColor(material, AI_MATKEY_COLOR_DIFFUSE, &diffuse_color);
+
+    aiColor4D emissive_color;
+    aiGetMaterialColor(material, AI_MATKEY_COLOR_EMISSIVE, &emissive_color);
+
+    aiColor4D specular_color;
+    aiGetMaterialColor(material, AI_MATKEY_COLOR_SPECULAR, &specular_color);
+
+    aiString p;
+    unsigned int texCount = 0;
+    for (int i = 0; i < aiTextureType_UNKNOWN; ++i) {
+        texCount += material->GetTextureCount((aiTextureType)i);
+    }
+
+    // std::shared_ptr<Texture> diffuseTexture = nullptr;
+    if (material->GetTexture(aiTextureType_DIFFUSE, 0, &p) == AI_SUCCESS) {
+        std::cout << "stringiii: " << p.C_Str() << std::endl;
+        // diffuseTexture = load_texture(p, model_path);
+    }
+
+    // std::shared_ptr<Texture> normalTexture = nullptr;
+    if (material->GetTexture(aiTextureType_NORMALS, 0, &p) == AI_SUCCESS) {
+        std::cout << "WHAAATTTTTTTT\n";
+        // normalTexture = load_texture(p, model_path);
+    }
+    /*auto mat = new Material(
+            glm::vec3(diffuse_color.r, diffuse_color.g, diffuse_color.b),
+            glm::vec3(emissive_color.r, emissive_color.g, emissive_color.b),
+            diffuseTexture, normalTexture);*/
+
+    // m_material_cache.insert(cache_key, mat);
+
+   // return mat;
 }
 
 /*Material ModelLoader::load_single_material(aiMaterial* material,
