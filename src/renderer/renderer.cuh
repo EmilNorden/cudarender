@@ -23,7 +23,7 @@ public:
 
     Renderer &operator=(const Renderer &) = delete;
 
-    void render(Camera *camera, Scene *scene, RandomGeneratorPool *random, int width, int height);
+    void render(Camera *camera, Scene *scene, RandomGeneratorPool *random, int width, int height, size_t sample);
 
     void render(int width, int height, const Camera &camera, const Scene &scene);
 

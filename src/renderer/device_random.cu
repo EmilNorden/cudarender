@@ -3,7 +3,7 @@
 
 __global__ void init_random_states(curandState *states, size_t pool_size, unsigned long long seed) {
     for (auto i = 0; i < pool_size; ++i) {
-        curand_init(seed, 0, 0, &states[i]);
+        curand_init(seed, i, 0, &states[i]);
     }
 }
 

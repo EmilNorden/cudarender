@@ -27,7 +27,7 @@ __device__ WorldSpaceRay Camera::cast_perturbed_ray(size_t x, size_t y, RandomGe
     float angle = random.value() * PI * 2.0f;
     float length = random.value() * m_blur_radius;
 
-    auto origin = m_position + (m_u * std::sin(angle) * length) + (m_v * std::cos(angle) * length);
+    auto origin = m_position + (m_u * sinf(angle) * length) + (m_v * cosf(angle) * length);
     auto direction = glm::normalize(focus_point - origin);
 
     return WorldSpaceRay{

@@ -17,41 +17,45 @@
 
 cudaError_t cuda();
 
-__global__ void kernel(){
+__global__ void kernel() {
 
 }
 
 // clamp x to range [a, b]
-__device__ float clamp(float x, float a, float b)
-{
+__device__ float clamp(float x, float a, float b) {
     return max(a, min(b, x));
 }
 
-__device__ int clamp(int x, int a, int b)
-{
+__device__ int clamp(int x, int a, int b) {
     return max(a, min(b, x));
 }
 
 // convert floating point rgb color to 8-bit integer
-__device__ int rgbToInt(float r, float g, float b)
-{
-    r = clamp(r, 0.0f, 255.0f);
-    g = clamp(g, 0.0f, 255.0f);
-    b = clamp(b, 0.0f, 255.0f);
+__device__ int rgbToInt(float r, float g, float b) {
+    r = clamp(r, 0.0f, 1.0f) * 255;
+    g = clamp(g, 0.0f, 1.0f) * 255;
+    b = clamp(b, 0.0f, 1.0f) * 255;
     return (int(b) << 16) | (int(g) << 8) | int(r);
 }
 
-__device__ bool hit_sphere(const WorldSpaceRay& ray) {
+// convert 8-bit integer to floating point rgb color
+__device__ void int_to_rgb(int color, glm::vec3 &out_color) {
+    out_color.x = static_cast<float>(color & 0xFF) / 255.0f;
+    out_color.y = static_cast<float>((color & 0xFF00) >> 8) / 255.0f;
+    out_color.z = static_cast<float>((color & 0xFF0000) >> 16) / 255.0f;
+}
+
+__device__ bool hit_sphere(const WorldSpaceRay &ray) {
     auto radius = 2.0f;
     auto position = glm::vec3(0.0, 0.0, 10.0);
 
-    auto squared_radius = radius*radius;
+    auto squared_radius = radius * radius;
     auto L = position - ray.origin().as_vec3();
     auto tca = glm::dot(L, ray.direction());
 
     auto d2 = glm::dot(L, L) - tca * tca;
 
-    if(d2 > squared_radius) {
+    if (d2 > squared_radius) {
         return false;
     }
 
@@ -59,15 +63,15 @@ __device__ bool hit_sphere(const WorldSpaceRay& ray) {
     auto t0 = tca - thc;
     auto t1 = tca + thc;
 
-    if(t0 > t1) {
+    if (t0 > t1) {
         auto temp = t0;
         t0 = t1;
         t1 = temp;
     }
 
-    if(t0 < 0.0) {
+    if (t0 < 0.0) {
         t0 = t1;
-        if(t0 < 0.0) {
+        if (t0 < 0.0) {
             return false;
         }
     }
@@ -77,14 +81,14 @@ __device__ bool hit_sphere(const WorldSpaceRay& ray) {
 
 
 __global__ void
-cudaRender(unsigned int *g_odata, Camera *camera, Scene *scene, RandomGeneratorPool *random_pool, int width, int height)
-{
+cudaRender(unsigned int *g_odata, Camera *camera, Scene *scene, RandomGeneratorPool *random_pool, int width, int height,
+           size_t sample) {
     int tx = threadIdx.x;
     int ty = threadIdx.y;
     int bw = blockDim.x;
     int bh = blockDim.y;
-    int x = blockIdx.x*bw + tx;
-    int y = blockIdx.y*bh + ty;
+    int x = blockIdx.x * bw + tx;
+    int y = blockIdx.y * bh + ty;
 
     auto threads_per_block = bw * bh;
     auto thread_num_in_block = tx + bw * ty;
@@ -97,13 +101,21 @@ cudaRender(unsigned int *g_odata, Camera *camera, Scene *scene, RandomGeneratorP
     //uchar4 c4 = make_uchar4((x & 0x20) ? 100 : 0, 0, (y & 0x20) ? 100 : 0, 0);
     // g_odata[y*width + x] = rgbToInt(c4.z, c4.y, c4.x);
 
-    if(x < width && y < height) {
+    if (x < width && y < height && sample < 500) {
         // auto ray = camera->cast_ray(x, y);
         auto ray = camera->cast_perturbed_ray(x, y, random);
 
         //auto hit = hit_sphere(ray);
         auto color = scene->hit(ray);
-        g_odata[y*width + x] = rgbToInt(color.x * 255, color.y * 255, color.z * 255);
+
+        glm::vec3 previous_color;
+        int_to_rgb( sample == 0 ? 0 : g_odata[y * width + x], previous_color);
+
+        color = ((previous_color * (float)sample) + color) / (sample + 1.0f);
+        g_odata[y * width + x] = rgbToInt(color.x, color.y, color.z);
+
+        //auto previous_r = previous_color & 0x000000
+//         g_odata[y*width + x] = ((previous_color * sample) + rgbToInt(color.x, color.y, color.z)) / (sample + 1);
 
         /*auto factor_x = (x / (float)width);
         auto factor_y = (y / (float)height);
@@ -119,10 +131,10 @@ cudaRender(unsigned int *g_odata, Camera *camera, Scene *scene, RandomGeneratorP
 
 }
 
-void Renderer::render(Camera* camera, Scene *scene, RandomGeneratorPool *random, int width, int height) {
+void Renderer::render(Camera *camera, Scene *scene, RandomGeneratorPool *random, int width, int height, size_t sample) {
     dim3 block(16, 16, 1);
-    dim3 grid(width / block.x, std::ceil(height / (float)block.y), 1);
-    cudaRender<<<grid, block, 0>>>((unsigned int*)m_cuda_render_buffer, camera, scene, random, width, height);
+    dim3 grid(width / block.x, std::ceil(height / (float) block.y), 1);
+    cudaRender<<<grid, block, 0>>>((unsigned int *) m_cuda_render_buffer, camera, scene, random, width, height, sample);
 
     cudaArray *texture_ptr;
     cuda_assert(cudaGraphicsMapResources(1, &m_cuda_tex_resource, 0));
@@ -137,14 +149,15 @@ void Renderer::render(Camera* camera, Scene *scene, RandomGeneratorPool *random,
 }
 
 Renderer::Renderer(GLuint gl_texture, int width, int height)
-    : m_cuda_render_buffer(nullptr) {
+        : m_cuda_render_buffer(nullptr) {
     allocate_render_buffer(width, height);
 
-    cuda_assert(cudaGraphicsGLRegisterImage(&m_cuda_tex_resource, gl_texture, GL_TEXTURE_2D, cudaGraphicsRegisterFlagsWriteDiscard));
+    cuda_assert(cudaGraphicsGLRegisterImage(&m_cuda_tex_resource, gl_texture, GL_TEXTURE_2D,
+                                            cudaGraphicsRegisterFlagsWriteDiscard));
 }
 
 void Renderer::allocate_render_buffer(int width, int height) {
-    if(m_cuda_render_buffer) {
+    if (m_cuda_render_buffer) {
         cudaFree(m_cuda_render_buffer);
     }
 
@@ -153,12 +166,11 @@ void Renderer::allocate_render_buffer(int width, int height) {
 }
 
 Renderer::~Renderer() {
-    if(m_cuda_render_buffer) {
+    if (m_cuda_render_buffer) {
         cudaFree(m_cuda_render_buffer);
     }
 }
 
-void Renderer::render(int width, int height, const Camera &camera, const Scene &scene)
-{
+void Renderer::render(int width, int height, const Camera &camera, const Scene &scene) {
 
 }

@@ -150,8 +150,8 @@ void init_gl_buffers() {
     check_for_gl_errors();
 }
 
-void display(Camera *camera, Scene *scene, Renderer &renderer, GlWindow &window, RandomGeneratorPool *random) {
-    renderer.render(camera, scene, random, WIDTH, HEIGHT);
+void display(Camera *camera, Scene *scene, Renderer &renderer, GlWindow &window, RandomGeneratorPool *random, size_t sample) {
+    renderer.render(camera, scene, random, WIDTH, HEIGHT, sample);
     glfwPollEvents();
 
 
@@ -246,7 +246,7 @@ int main() {
     camera->set_direction(glm::vec3(0.0, 0.0, -1.0));
     camera->set_up(glm::vec3(0.0, 1.0, 0.0));
     camera->set_field_of_view(90.0 * (3.1415 / 180.0));
-    camera->set_blur_radius(0.0);
+    camera->set_blur_radius(0.0004);
     camera->set_focal_length(0.0075);
     camera->set_shutter_speed(0.0);
     camera->set_resolution(glm::vec2(WIDTH, HEIGHT));
@@ -265,22 +265,23 @@ int main() {
     new(scene) Scene;
     scene->build(spheres, meshez);
 
-    // auto random = create_random_generator_pool(2048, 123);
     auto random = create_device_type<RandomGeneratorPool>(2048, 123);
 
     double rotation = 0.0;
     double total_duration = 0.0f;
     double max_duration = 0.0f;
     int frame_counter = 0;
+    size_t sample = 0;
     while (!window.should_close()) {
 
-        auto camera_position = glm::vec3(glm::cos(rotation) * 0.0075f, 0.0012, glm::sin(rotation) * 0.0075f);
+        /*auto camera_position = glm::vec3(glm::cos(rotation) * 0.0075f, 0.0012, glm::sin(rotation) * 0.0075f);
         auto camera_direction = glm::normalize(glm::vec3(0.0, 0.0, 0.0f) - camera_position);
         camera->set_position(camera_position);
         camera->set_direction(camera_direction);
-        camera->update();
+        camera->update();*/
         auto start = std::chrono::high_resolution_clock::now();
-        display(camera, scene, rend, window, random);
+        display(camera, scene, rend, window, random, sample);
+        ++sample;
         auto end = std::chrono::high_resolution_clock::now();
         auto frame_duration = std::chrono::duration<double, std::milli>(end - start);
         frame_counter++;
@@ -289,8 +290,8 @@ int main() {
         }
         total_duration += frame_duration.count();
         std::cout << '\r' << "Frame time: " << frame_duration.count() << "ms\t\t Avg (10 frames): "
-                  << (total_duration / frame_counter) << "ms\t\t Max: " << max_duration << "ms\tt Camera: "
-                  //<< camera_position.x << "," << camera_position.y << "," << camera_position.z << "                    "
+                  << (total_duration / frame_counter) << "ms\t\t Max: " << max_duration << "ms\tt Sample: "
+                  << sample << "                    "
                   << std::flush;
 
         if (frame_counter == 10) {
@@ -300,37 +301,6 @@ int main() {
         rotation += frame_duration.count() * 0.0005;
     }
 
-    int N = 1 << 20;
-    float *x, *y;
-
-    // Allocate unified memory - accessible from CPU or GPU
-    cudaMallocManaged(&x, N * sizeof(float));
-    cudaMallocManaged(&y, N * sizeof(float));
-
-    // initialize x and y arrays on the host
-    for (int i = 0; i < N; i++) {
-        x[i] = 1.0f;
-        y[i] = 2.0f;
-    }
-
-    // Run kernel on 1M elements on the GPU
-    int blockSize = 256;
-    int numBlocks = (N + blockSize - 1) / blockSize;
-    add<<<numBlocks, blockSize>>>(N, x, y);
-
-    // Wait for GPU to finish before accessing on host
-    cudaDeviceSynchronize();
-
-    // Check for errors (all values should be 3.0f)
-    float maxError = 0.0f;
-    for (int i = 0; i < N; i++) {
-        maxError = std::max(maxError, std::abs(y[i] - 3.0f));
-    }
-    std::cout << "Max error: " << maxError << std::endl;
-
-    // Free memory
-    cudaFree(x);
-    cudaFree(y);
     cudaFree(camera);
 
     // https://stackoverflow.com/questions/14446495/cmake-project-structure-with-unit-tests
