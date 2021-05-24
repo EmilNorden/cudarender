@@ -8,6 +8,7 @@ set(CMAKE_DEPENDS_CHECK_CUDA
   "/home/emil/code/cuda-test2/src/renderer/cuda_utils.cu" "/home/emil/code/cuda-test2/cmake-build-release/src/CMakeFiles/renderer.dir/renderer/cuda_utils.cu.o"
   "/home/emil/code/cuda-test2/src/renderer/device_mesh.cu" "/home/emil/code/cuda-test2/cmake-build-release/src/CMakeFiles/renderer.dir/renderer/device_mesh.cu.o"
   "/home/emil/code/cuda-test2/src/renderer/device_mesh_loader.cu" "/home/emil/code/cuda-test2/cmake-build-release/src/CMakeFiles/renderer.dir/renderer/device_mesh_loader.cu.o"
+  "/home/emil/code/cuda-test2/src/renderer/device_random.cu" "/home/emil/code/cuda-test2/cmake-build-release/src/CMakeFiles/renderer.dir/renderer/device_random.cu.o"
   "/home/emil/code/cuda-test2/src/renderer/device_texture.cu" "/home/emil/code/cuda-test2/cmake-build-release/src/CMakeFiles/renderer.dir/renderer/device_texture.cu.o"
   "/home/emil/code/cuda-test2/src/renderer/renderer.cu" "/home/emil/code/cuda-test2/cmake-build-release/src/CMakeFiles/renderer.dir/renderer/renderer.cu.o"
   )

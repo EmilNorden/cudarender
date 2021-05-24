@@ -245,6 +245,12 @@
 		<Unit filename="/home/emil/code/cuda-test2/src/renderer/device_mesh_loader.cuh">
 			<Option target="renderer"/>
 		</Unit>
+		<Unit filename="/home/emil/code/cuda-test2/src/renderer/device_random.cu">
+			<Option target="renderer"/>
+		</Unit>
+		<Unit filename="/home/emil/code/cuda-test2/src/renderer/device_random.cuh">
+			<Option target="renderer"/>
+		</Unit>
 		<Unit filename="/home/emil/code/cuda-test2/src/renderer/device_stack.cuh">
 			<Option target="renderer"/>
 		</Unit>

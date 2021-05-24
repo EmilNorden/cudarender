@@ -11,7 +11,7 @@ CMake Warning (dev) at /usr/lib/x86_64-linux-gnu/cmake/assimp-5.0/assimpTargets.
   set the policy and suppress this warning.
 Call Stack (most recent call first):
   /usr/lib/x86_64-linux-gnu/cmake/assimp-5.0/assimp-config.cmake:1 (include)
-  src/CMakeLists.txt:34 (find_package)
+  src/CMakeLists.txt:36 (find_package)
 This warning is for project developers.  Use -Wno-dev to suppress it.
 
 -- Found FreeImage: headers at /usr/include, libraries at  :: /usr/lib/x86_64-linux-gnu/libfreeimage.so

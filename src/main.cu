@@ -232,13 +232,6 @@ int main() {
 
     Renderer rend{opengl_tex_cuda, WIDTH, HEIGHT};
 
-    Sphere s1{glm::vec3(-2.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f), 1.0f};
-    Sphere s2{glm::vec3(2.0f, 0.0f, 0.0f), glm::vec3(1.0f, 0.0f, 1.0f), 1.0f};
-    std::vector<Sphere> spheres;
-    spheres.push_back(s1);
-    spheres.push_back(s2);
-
-
     Camera *camera = create_device_type<Camera>();
 
     float rot = 1.45f;
@@ -265,7 +258,7 @@ int main() {
     Scene *scene;
     cudaMallocManaged(&scene, sizeof(Scene));
     new(scene) Scene;
-    scene->build(spheres, meshez);
+    scene->build(meshez);
 
     auto random = create_device_type<RandomGeneratorPool>(2048, 123);
 

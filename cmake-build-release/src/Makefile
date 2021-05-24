@@ -440,6 +440,33 @@ renderer/device_mesh_loader.cu.s:
 	cd /home/emil/code/cuda-test2/cmake-build-release && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/renderer.dir/build.make src/CMakeFiles/renderer.dir/renderer/device_mesh_loader.cu.s
 .PHONY : renderer/device_mesh_loader.cu.s
 
+renderer/device_random.o: renderer/device_random.cu.o
+
+.PHONY : renderer/device_random.o
+
+# target to build an object file
+renderer/device_random.cu.o:
+	cd /home/emil/code/cuda-test2/cmake-build-release && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/renderer.dir/build.make src/CMakeFiles/renderer.dir/renderer/device_random.cu.o
+.PHONY : renderer/device_random.cu.o
+
+renderer/device_random.i: renderer/device_random.cu.i
+
+.PHONY : renderer/device_random.i
+
+# target to preprocess a source file
+renderer/device_random.cu.i:
+	cd /home/emil/code/cuda-test2/cmake-build-release && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/renderer.dir/build.make src/CMakeFiles/renderer.dir/renderer/device_random.cu.i
+.PHONY : renderer/device_random.cu.i
+
+renderer/device_random.s: renderer/device_random.cu.s
+
+.PHONY : renderer/device_random.s
+
+# target to generate assembly for a file
+renderer/device_random.cu.s:
+	cd /home/emil/code/cuda-test2/cmake-build-release && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/renderer.dir/build.make src/CMakeFiles/renderer.dir/renderer/device_random.cu.s
+.PHONY : renderer/device_random.cu.s
+
 renderer/device_texture.o: renderer/device_texture.cu.o
 
 .PHONY : renderer/device_texture.o
@@ -589,6 +616,9 @@ help:
 	@echo "... renderer/device_mesh_loader.o"
 	@echo "... renderer/device_mesh_loader.i"
 	@echo "... renderer/device_mesh_loader.s"
+	@echo "... renderer/device_random.o"
+	@echo "... renderer/device_random.i"
+	@echo "... renderer/device_random.s"
 	@echo "... renderer/device_texture.o"
 	@echo "... renderer/device_texture.i"
 	@echo "... renderer/device_texture.s"

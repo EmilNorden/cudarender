@@ -141,9 +141,22 @@ src/CMakeFiles/renderer.dir/renderer/device_mesh.cu.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CUDA source to assembly CMakeFiles/renderer.dir/renderer/device_mesh.cu.s"
 	$(CMAKE_COMMAND) -E cmake_unimplemented_variable CMAKE_CUDA_CREATE_ASSEMBLY_SOURCE
 
+src/CMakeFiles/renderer.dir/renderer/device_random.cu.o: src/CMakeFiles/renderer.dir/flags.make
+src/CMakeFiles/renderer.dir/renderer/device_random.cu.o: ../src/renderer/device_random.cu
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/emil/code/cuda-test2/cmake-build-release/CMakeFiles --progress-num=$(CMAKE_PROGRESS_6) "Building CUDA object src/CMakeFiles/renderer.dir/renderer/device_random.cu.o"
+	cd /home/emil/code/cuda-test2/cmake-build-release/src && /usr/local/cuda-11.3/bin/nvcc -forward-unknown-to-host-compiler $(CUDA_DEFINES) $(CUDA_INCLUDES) $(CUDA_FLAGS) -x cu -dc /home/emil/code/cuda-test2/src/renderer/device_random.cu -o CMakeFiles/renderer.dir/renderer/device_random.cu.o
+
+src/CMakeFiles/renderer.dir/renderer/device_random.cu.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing CUDA source to CMakeFiles/renderer.dir/renderer/device_random.cu.i"
+	$(CMAKE_COMMAND) -E cmake_unimplemented_variable CMAKE_CUDA_CREATE_PREPROCESSED_SOURCE
+
+src/CMakeFiles/renderer.dir/renderer/device_random.cu.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CUDA source to assembly CMakeFiles/renderer.dir/renderer/device_random.cu.s"
+	$(CMAKE_COMMAND) -E cmake_unimplemented_variable CMAKE_CUDA_CREATE_ASSEMBLY_SOURCE
+
 src/CMakeFiles/renderer.dir/renderer/device_texture.cu.o: src/CMakeFiles/renderer.dir/flags.make
 src/CMakeFiles/renderer.dir/renderer/device_texture.cu.o: ../src/renderer/device_texture.cu
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/emil/code/cuda-test2/cmake-build-release/CMakeFiles --progress-num=$(CMAKE_PROGRESS_6) "Building CUDA object src/CMakeFiles/renderer.dir/renderer/device_texture.cu.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/emil/code/cuda-test2/cmake-build-release/CMakeFiles --progress-num=$(CMAKE_PROGRESS_7) "Building CUDA object src/CMakeFiles/renderer.dir/renderer/device_texture.cu.o"
 	cd /home/emil/code/cuda-test2/cmake-build-release/src && /usr/local/cuda-11.3/bin/nvcc -forward-unknown-to-host-compiler $(CUDA_DEFINES) $(CUDA_INCLUDES) $(CUDA_FLAGS) -x cu -dc /home/emil/code/cuda-test2/src/renderer/device_texture.cu -o CMakeFiles/renderer.dir/renderer/device_texture.cu.o
 
 src/CMakeFiles/renderer.dir/renderer/device_texture.cu.i: cmake_force
@@ -161,6 +174,7 @@ renderer_OBJECTS = \
 "CMakeFiles/renderer.dir/renderer/cuda_utils.cu.o" \
 "CMakeFiles/renderer.dir/renderer/device_mesh_loader.cu.o" \
 "CMakeFiles/renderer.dir/renderer/device_mesh.cu.o" \
+"CMakeFiles/renderer.dir/renderer/device_random.cu.o" \
 "CMakeFiles/renderer.dir/renderer/device_texture.cu.o"
 
 # External object files for target renderer
@@ -171,10 +185,11 @@ src/librenderer.a: src/CMakeFiles/renderer.dir/renderer/camera.cu.o
 src/librenderer.a: src/CMakeFiles/renderer.dir/renderer/cuda_utils.cu.o
 src/librenderer.a: src/CMakeFiles/renderer.dir/renderer/device_mesh_loader.cu.o
 src/librenderer.a: src/CMakeFiles/renderer.dir/renderer/device_mesh.cu.o
+src/librenderer.a: src/CMakeFiles/renderer.dir/renderer/device_random.cu.o
 src/librenderer.a: src/CMakeFiles/renderer.dir/renderer/device_texture.cu.o
 src/librenderer.a: src/CMakeFiles/renderer.dir/build.make
 src/librenderer.a: src/CMakeFiles/renderer.dir/link.txt
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --bold --progress-dir=/home/emil/code/cuda-test2/cmake-build-release/CMakeFiles --progress-num=$(CMAKE_PROGRESS_7) "Linking CUDA static library librenderer.a"
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --bold --progress-dir=/home/emil/code/cuda-test2/cmake-build-release/CMakeFiles --progress-num=$(CMAKE_PROGRESS_8) "Linking CUDA static library librenderer.a"
 	cd /home/emil/code/cuda-test2/cmake-build-release/src && $(CMAKE_COMMAND) -P CMakeFiles/renderer.dir/cmake_clean_target.cmake
 	cd /home/emil/code/cuda-test2/cmake-build-release/src && $(CMAKE_COMMAND) -E cmake_link_script CMakeFiles/renderer.dir/link.txt --verbose=$(VERBOSE)
 

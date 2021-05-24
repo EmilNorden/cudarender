@@ -3,6 +3,7 @@ file(REMOVE_RECURSE
   "CMakeFiles/renderer.dir/renderer/cuda_utils.cu.o"
   "CMakeFiles/renderer.dir/renderer/device_mesh.cu.o"
   "CMakeFiles/renderer.dir/renderer/device_mesh_loader.cu.o"
+  "CMakeFiles/renderer.dir/renderer/device_random.cu.o"
   "CMakeFiles/renderer.dir/renderer/device_texture.cu.o"
   "CMakeFiles/renderer.dir/renderer/renderer.cu.o"
   "librenderer.a"
