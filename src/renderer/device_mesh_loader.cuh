@@ -10,7 +10,7 @@ class aiMaterial;
 
 class DeviceMeshLoader {
 public:
-    __host__ std::vector<IndexedDeviceMesh> load(const std::string& path);
+    __host__ std::vector<IndexedDeviceMesh*> load(const std::string& path);
 private:
 };
 

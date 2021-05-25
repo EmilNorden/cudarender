@@ -35,7 +35,7 @@ public:
     [[nodiscard]] float field_of_view() const { return m_fov; }
     [[nodiscard]] float aspect_ratio() const { return m_ratio; }
     [[nodiscard]] float blur_radius() const { return m_blur_radius; }
-    [[nodiscard]] float focal_length() const { return m_focal_length; }
+    [[nodiscard]] __device__ __host__ float focal_length() const { return m_focal_length; }
     [[nodiscard]] float shutter_speed() const { return m_shutter_speed; }
 
     __device__ __host__ void update() {

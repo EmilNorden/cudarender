@@ -7,6 +7,8 @@ set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -DRENDER_DEBUG")
 
 add_library(renderer
         renderer/aabb.cuh
+        renderer/autofocus.cu
+        renderer/autofocus.cuh
         renderer/renderer.cu
         renderer/renderer.cuh
         renderer/camera.cu
@@ -24,8 +26,13 @@ add_library(renderer
         renderer/device_stack.cuh
         renderer/device_texture.cu
         renderer/device_texture.cuh
+        renderer/intersection.cuh
         renderer/kd_tree.cuh
         renderer/ray.cuh
+        renderer/scene.cuh
+        renderer/scene_entity.cu
+        renderer/scene_entity.cuh
+        renderer/transform.cuh
         )
 
 # find_package(SDL2 REQUIRED)

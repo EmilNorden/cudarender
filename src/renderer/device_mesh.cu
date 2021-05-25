@@ -37,17 +37,17 @@ struct NodeSearchData {
 };
 
 __device__ bool
-intersect_node(TreeNode *node, const WorldSpaceRay &ray, float &tmin, float &tmax,
+intersect_node(TreeNode *node, const ObjectSpaceRay &ray, float &tmin, float &tmax,
                DeviceStack<STACK_SIZE, NodeSearchData> &nodes);
 
 __device__ bool
-intersect_leaf(TreeNode *node, const WorldSpaceRay &ray, float &tmin, float &tmax,
+intersect_leaf(TreeNode *node, const ObjectSpaceRay &ray, float &tmin, float &tmax,
                DeviceStack<STACK_SIZE, NodeSearchData> &nodes);
 
 #define EPSILON 9.99999997475243E-07
 
 
-__device__ bool hit_aabb(const WorldSpaceRay &ray, const AABB &aabb, float &out_near, float &out_far) {
+__device__ bool hit_aabb(const ObjectSpaceRay &ray, const AABB &aabb, float &out_near, float &out_far) {
     out_near = FLT_MIN;
     out_far = FLT_MAX;
     for (auto i = 0; i < 3; ++i) {
@@ -57,8 +57,8 @@ __device__ bool hit_aabb(const WorldSpaceRay &ray, const AABB &aabb, float &out_
             }
         }
          */
-        auto t1 = (aabb.min()[i] - ray.origin().as_vec3()[i]) / ray.direction()[i];// / self.direction[i];
-        auto t2 = (aabb.max()[i] - ray.origin().as_vec3()[i]) / ray.direction()[i]; // / self.direction[i];
+        auto t1 = (aabb.min()[i] - ray.origin()[i]) / ray.direction()[i];// / self.direction[i];
+        auto t2 = (aabb.max()[i] - ray.origin()[i]) / ray.direction()[i]; // / self.direction[i];
 
         if (t1 > t2) {
             auto temp = t1;
@@ -83,7 +83,7 @@ __device__ bool hit_aabb(const WorldSpaceRay &ray, const AABB &aabb, float &out_
 }
 
 __device__ bool
-hit_triangle(const WorldSpaceRay &ray, glm::vec3 v1, glm::vec3 v2, glm::vec3 v3, float &out_u, float &out_v,
+hit_triangle(const ObjectSpaceRay &ray, glm::vec3 v1, glm::vec3 v2, glm::vec3 v3, float &out_u, float &out_v,
              float &out_distance) {
     // Find vectors for two edges sharing V1
     glm::vec3 e1 = v2 - v1;
@@ -109,7 +109,7 @@ hit_triangle(const WorldSpaceRay &ray, glm::vec3 v1, glm::vec3 v2, glm::vec3 v3,
     float inv_det = 1.0f / det;
 
     // calculate distance from V1 to ray origin
-    glm::vec3 T = ray.origin().as_vec3() - v1;
+    glm::vec3 T = ray.origin() - v1;
 
     // Calculate u parameter and test bound
     float u = glm::dot(T, P) * inv_det;
@@ -248,7 +248,7 @@ __device__ bool is_leaf(TreeNode *node) {
 }
 
 __device__ bool
-intersects_mesh(const WorldSpaceRay &ray, TreeNode *node, glm::vec3 *vertices, Intersection &intersection,
+intersects_mesh(const ObjectSpaceRay &ray, TreeNode *node, glm::vec3 *vertices, Intersection &intersection,
                 float &tmax) {
     auto success = false;
     for (auto i = 0; i < node->face_count; ++i) {
@@ -279,10 +279,10 @@ intersects_mesh(const WorldSpaceRay &ray, TreeNode *node, glm::vec3 *vertices, I
     return success;
 }
 
-__device__ Tuple<TreeNode *> order_subnodes(const WorldSpaceRay &ray, TreeNode *node, float tmin, float tmax) {
+__device__ Tuple<TreeNode *> order_subnodes(const ObjectSpaceRay &ray, TreeNode *node, float tmin, float tmax) {
     auto axis = static_cast<int>(node->splitting_axis);
-    auto tmin_axis = ray.origin().as_vec3()[axis] + (ray.direction()[axis] * tmin);
-    auto tmax_axis = ray.origin().as_vec3()[axis] + (ray.direction()[axis] * tmax);
+    auto tmin_axis = ray.origin()[axis] + (ray.direction()[axis] * tmin);
+    auto tmax_axis = ray.origin()[axis] + (ray.direction()[axis] * tmax);
 
     if (tmin_axis < node->splitting_value && tmax_axis < node->splitting_value) {
         return {
@@ -316,11 +316,11 @@ enum class RangePlaneComparison {
 };
 
 __device__ RangePlaneComparison
-CompareRangeWithPlane(const WorldSpaceRay &ray, float tmin, float tmax, TreeNode *node) {
+CompareRangeWithPlane(const ObjectSpaceRay &ray, float tmin, float tmax, TreeNode *node) {
     auto axis = (int) node->splitting_axis;
     // TODO: Extract components before performing multiplication etc.
-    auto range_start = ray.origin().as_vec3() + (ray.direction() * tmin);
-    auto range_end = ray.origin().as_vec3() + (ray.direction() * tmax);
+    auto range_start = ray.origin() + (ray.direction() * tmin);
+    auto range_end = ray.origin() + (ray.direction() * tmax);
 
     auto splitting_value = node->splitting_value;
 
@@ -339,8 +339,8 @@ CompareRangeWithPlane(const WorldSpaceRay &ray, float tmin, float tmax, TreeNode
 
 
 __device__ bool
-IndexedDeviceMesh::intersect(const WorldSpaceRay &ray, Intersection &intersection, float &out_distance) {
-    out_distance = FLT_MAX;
+IndexedDeviceMesh::intersect(const ObjectSpaceRay &ray, Intersection &intersection) {
+    intersection.distance = FLT_MAX;
     float global_tmin = 0.0f;
     float global_tmax = 0.0f;
     if (!hit_aabb(ray, m_bounds, global_tmin, global_tmax)) {
@@ -362,12 +362,12 @@ IndexedDeviceMesh::intersect(const WorldSpaceRay &ray, Intersection &intersectio
 
         if (is_leaf(node)) {
             if (intersects_mesh(ray, node, m_vertices, intersection, tmax)) {
-                out_distance = tmax;
+                intersection.distance = tmax;
                 return true;
             }
         } else {
             auto a = (int) node->splitting_axis;
-            auto thit = (node->splitting_value - ray.origin().as_vec3()[a]) / ray.direction()[a];
+            auto thit = (node->splitting_value - ray.origin()[a]) / ray.direction()[a];
 
             switch (CompareRangeWithPlane(ray, tmin, tmax, node)) {
                 case RangePlaneComparison::AbovePlane:
@@ -406,10 +406,10 @@ IndexedDeviceMesh::intersect(const WorldSpaceRay &ray, Intersection &intersectio
 }*/
 
 __device__ bool
-intersect_split(TreeNode *node, const WorldSpaceRay &ray, float &tmin, float &tmax,
+intersect_split(TreeNode *node, const ObjectSpaceRay &ray, float &tmin, float &tmax,
                 DeviceStack<STACK_SIZE, NodeSearchData> &nodes) {
     auto a = (int) node->splitting_axis;
-    auto thit = (node->splitting_value - ray.origin().as_vec3()[a]) / ray.direction()[a];
+    auto thit = (node->splitting_value - ray.origin()[a]) / ray.direction()[a];
     auto nodes_to_search = order_subnodes(ray, node, tmin, tmax);
 
     if (thit >= tmax || thit < 0) {
@@ -427,7 +427,7 @@ intersect_split(TreeNode *node, const WorldSpaceRay &ray, float &tmin, float &tm
 }
 
 __device__ bool
-intersect_node(TreeNode *node, const WorldSpaceRay &ray, float &tmin, float &tmax,
+intersect_node(TreeNode *node, const ObjectSpaceRay &ray, float &tmin, float &tmax,
                DeviceStack<STACK_SIZE, NodeSearchData> &nodes) {
     if (node->faces) {
         return intersect_leaf(node, ray, tmin, tmax, nodes);
@@ -437,7 +437,7 @@ intersect_node(TreeNode *node, const WorldSpaceRay &ray, float &tmin, float &tma
 }
 
 __device__ bool
-intersect_leaf(TreeNode *node, const glm::vec3 *vertices, const WorldSpaceRay &ray, float &tmin, float &tmax,
+intersect_leaf(TreeNode *node, const glm::vec3 *vertices, const ObjectSpaceRay &ray, float &tmin, float &tmax,
                DeviceStack<STACK_SIZE, NodeSearchData> &nodes) {
     auto success = false;
     for (auto i = 0; i < node->face_count; ++i) {

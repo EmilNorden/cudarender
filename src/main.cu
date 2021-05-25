@@ -16,6 +16,7 @@
 #include "content/model_loader.h"
 #include "renderer/device_mesh_loader.cuh"
 #include "renderer/device_random.cuh"
+#include "renderer/autofocus.cuh"
 
 #if defined(RENDER_DEBUG)
 #define DEBUG_ASSERT_SDL(x) {                                   \
@@ -235,14 +236,15 @@ int main() {
     Camera *camera = create_device_type<Camera>();
 
     float rot = 1.45f;
-    auto camera_position = glm::vec3(glm::cos(rot) * 0.0075f, 0.0000, glm::sin(rot) * 0.0075f);
-    auto camera_direction = glm::normalize(glm::vec3(0.0, 0.0, 0.0f) - camera_position);
+    //auto camera_position = glm::vec3(glm::cos(rot) * 10.0, 0.0000, glm::sin(rot) * 10.0f);
+    auto camera_position = glm::vec3(2.0, 0.0, 7.5f);
+    auto camera_direction = glm::normalize(glm::vec3(-7.0, 0.0, -60.0f) - camera_position);
     camera->set_position(camera_position);
     camera->set_direction(camera_direction);
     camera->set_up(glm::vec3(0.0, 1.0, 0.0));
     camera->set_field_of_view(90.0 * (3.1415 / 180.0));
-    camera->set_blur_radius(0.0004);
-    camera->set_focal_length(0.0075);
+    camera->set_blur_radius(0.1);
+    camera->set_focal_length(60.0);
     camera->set_shutter_speed(0.0);
     camera->set_resolution(glm::vec2(WIDTH, HEIGHT));
     camera->update();
@@ -255,10 +257,24 @@ int main() {
 
     //std::vector<IndexedDeviceMesh> meshes;
     //meshes.push_back(suzanne);
+
+    std::vector<SceneEntity> entities;
+
+    for(int i = 0; i < 10; ++i) {
+        entities.emplace_back(meshez[0],
+                              WorldTransformBuilder()
+                                      .with_translation({-7.0, 0.0, i * -12.0})
+                                      .with_rotation({0, 1.57, 0})
+                                      .with_uniform_scale(1000.0f)
+                                      .build());
+    }
+
+
+
     Scene *scene;
     cudaMallocManaged(&scene, sizeof(Scene));
     new(scene) Scene;
-    scene->build(meshez);
+    scene->build(meshez, entities);
 
     auto random = create_device_type<RandomGeneratorPool>(2048, 123);
 
@@ -267,6 +283,8 @@ int main() {
     double max_duration = 0.0f;
     int frame_counter = 0;
     size_t sample = 0;
+
+    device_autofocus(camera, scene, WIDTH, HEIGHT);
     while (!window.should_close()) {
 
         /*auto camera_position = glm::vec3(glm::cos(rotation) * 0.0075f, 0.00, glm::sin(rotation) * 0.0075f);

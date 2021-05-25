@@ -7,6 +7,7 @@
 #include "ray.cuh"
 #include "aabb.cuh"
 #include "device_material.cuh"
+#include "intersection.cuh"
 
 // Forward declarations
 struct TreeNode;
@@ -21,15 +22,6 @@ struct Triangle {
     glm::vec3 v0;
     glm::vec3 v1;
     glm::vec3 v2;
-};
-
-struct Intersection {
-    __device__ Intersection() {}
-    int i0;
-    int i1;
-    int i2;
-    float u;
-    float v;
 };
 
 
@@ -49,7 +41,7 @@ public:
 
     [[nodiscard]] __device__ DeviceMaterial& material() { return m_material; }
 
-    __device__ bool intersect(const WorldSpaceRay &ray, Intersection &intersection, float &out_distance);
+    __device__ bool intersect(const ObjectSpaceRay &ray, Intersection &intersection);
 
 private:
     DeviceMaterial m_material;
@@ -60,9 +52,6 @@ private:
     int m_vertex_count; // TODO is count needed on anything other than face count?
     glm::vec2 *m_tex_coords;
     int m_tex_coord_count;
-
-
-
 
     void build_node(TreeNode &node, std::vector<TriangleFace> &faces, Axis current_axis);
 };

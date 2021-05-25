@@ -11,15 +11,16 @@ struct WorldSpaceCoordinate {
 public:
     __device__ WorldSpaceCoordinate(glm::vec3 coordinate) : m_coordinate(coordinate) {}
 
-    __device__ const glm::vec3& as_vec3() const { return m_coordinate; }
+    [[nodiscard]] __device__ const glm::vec3& as_vec3() const { return m_coordinate; }
 private:
     glm::vec3 m_coordinate;
 };
 
 struct ObjectSpaceCoordinate {
+public:
     __device__ ObjectSpaceCoordinate(glm::vec3 coordinate) : m_coordinate(coordinate) {}
 
-    const glm::vec3& as_vec3() const { return m_coordinate; }
+    [[nodiscard]] __device__ const glm::vec3& as_vec3() const { return m_coordinate; }
 private:
     glm::vec3 m_coordinate;
 };

@@ -52,7 +52,7 @@ __device__ bool hit_sphere(const WorldSpaceRay &ray) {
     auto position = glm::vec3(0.0, 0.0, 10.0);
 
     auto squared_radius = radius * radius;
-    auto L = position - ray.origin().as_vec3();
+    auto L = position - ray.origin();
     auto tca = glm::dot(L, ray.direction());
 
     auto d2 = glm::dot(L, L) - tca * tca;

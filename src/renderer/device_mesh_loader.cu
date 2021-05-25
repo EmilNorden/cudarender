@@ -12,13 +12,13 @@
 
 using namespace std;
 
-__host__ IndexedDeviceMesh load_single_mesh(aiMesh* mesh, const vector<DeviceMaterial> &materials);
+__host__ IndexedDeviceMesh* load_single_mesh(aiMesh* mesh, const vector<DeviceMaterial> &materials);
 __host__ DeviceMaterial load_single_material(aiMaterial *material, const filesystem::path& model_directory);
 
-__host__ vector<IndexedDeviceMesh> DeviceMeshLoader::load(const string& path) {
+__host__ vector<IndexedDeviceMesh*> DeviceMeshLoader::load(const string& path) {
     cout << "Loading model " << path << endl;
 
-    vector<IndexedDeviceMesh> meshes;
+    vector<IndexedDeviceMesh*> meshes;
     Assimp::Importer importer;
 
     unsigned int assimp_flags =
@@ -56,7 +56,7 @@ __host__ vector<IndexedDeviceMesh> DeviceMeshLoader::load(const string& path) {
     return meshes;
 }
 
-__host__ IndexedDeviceMesh load_single_mesh(aiMesh* mesh, const vector<DeviceMaterial> &materials) {
+__host__ IndexedDeviceMesh* load_single_mesh(aiMesh* mesh, const vector<DeviceMaterial> &materials) {
     std::vector<glm::vec3> vertices;
     //std::vector<tri_index> indices;
     std::vector<int> indices;
@@ -121,7 +121,11 @@ __host__ IndexedDeviceMesh load_single_mesh(aiMesh* mesh, const vector<DeviceMat
     cout << "    Vertices: " << vertices.size() << "\t\t Faces: " << indices.size() / 3 << endl;
 
     auto& material = materials[mesh->mMaterialIndex];
-    return IndexedDeviceMesh{vertices, faces_from_indices(indices), texture_coords, material};
+
+    // TODO: An idea for later. Perhaps I can allocate space for all meshes at once, and return a single pointer to all instead of a vector of pointers
+    IndexedDeviceMesh *device_mesh;
+    cudaMallocManaged(&device_mesh, sizeof(IndexedDeviceMesh));
+    return new(device_mesh) IndexedDeviceMesh{vertices, faces_from_indices(indices), texture_coords, material};
 }
 
 __host__ DeviceTexture* load_device_texture(const filesystem::path& model_directory, const std::string& filename) {
