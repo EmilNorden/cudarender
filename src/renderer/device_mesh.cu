@@ -1,5 +1,6 @@
 #include "device_mesh.cuh"
 #include "device_stack.cuh" // For kd tree traversal
+#include "device_random.cuh"
 
 using namespace std;
 
@@ -17,7 +18,7 @@ struct TreeNode {
     TreeNode *left;
     TreeNode *right;
     TriangleFace *faces;
-    int face_count;
+    size_t face_count;
 };
 
 struct NodeSearchData {
@@ -141,6 +142,7 @@ hit_triangle(const ObjectSpaceRay &ray, glm::vec3 v1, glm::vec3 v2, glm::vec3 v3
 }
 
 __host__ IndexedDeviceMesh::IndexedDeviceMesh(const std::vector<glm::vec3> &vertices,
+                                              const std::vector<glm::vec3> &normals,
                                               const std::vector<TriangleFace> &faces,
                                               const std::vector<glm::vec2> &tex_coords,
                                               const DeviceMaterial &material)
@@ -148,8 +150,11 @@ __host__ IndexedDeviceMesh::IndexedDeviceMesh(const std::vector<glm::vec3> &vert
 
     // cudaMalloc(&m_vertices, sizeof(glm::vec3) * vertices.size());
     cudaMallocManaged(&m_vertices, sizeof(glm::vec3) * vertices.size());
-    cudaMemcpy(m_vertices, vertices.data(), sizeof(glm::vec3) * vertices.size(), cudaMemcpyHostToHost);
+    cudaMemcpy(m_vertices, vertices.data(), sizeof(glm::vec3) * vertices.size(), cudaMemcpyHostToDevice);
     m_vertex_count = vertices.size();
+
+    cudaMalloc(&m_normals, sizeof(glm::vec3) * normals.size());
+    cudaMemcpy(m_normals, normals.data(), sizeof(glm::vec3) * normals.size(), cudaMemcpyHostToDevice);
 
     // cudaMalloc(&m_faces, sizeof(TriangleFace) * faces.size());
 
@@ -178,7 +183,7 @@ bool is_sorted(glm::vec3 *verts, std::vector<TriangleFace> &faces) {
 
 void IndexedDeviceMesh::build_node(TreeNode &node, std::vector<TriangleFace> &faces, Axis current_axis) {
 
-    if (faces.size() < 2000) {
+    if (faces.size() < 250) {
         cudaMalloc(&node.faces, sizeof(TriangleFace) * faces.size());
         cudaMemcpy(node.faces, faces.data(), sizeof(TriangleFace) * faces.size(), cudaMemcpyHostToDevice);
         node.face_count = faces.size();
@@ -392,79 +397,20 @@ IndexedDeviceMesh::intersect(const ObjectSpaceRay &ray, Intersection &intersecti
     return false;
 }
 
+[[nodiscard]] __device__ TriangleFace IndexedDeviceMesh::get_random_face(RandomGenerator &random) {
+    TreeNode *current = m_root;
 
-/*__device__ bool IndexedDeviceMesh::intersect(const WorldSpaceRay &ray, float &out_distance) {
-    out_distance = FLT_MAX;
-    float tmin = 0.0f;
-    float tmax = 0.0f;
-    if (!hit_aabb(ray, m_bounds, tmin, tmax)) {
-        return false;
-    }
-
-    DeviceStack<NodeSearchData> nodes;
-    return intersect_node(m_root, ray, tmin, tmax, nodes);
-}*/
-
-__device__ bool
-intersect_split(TreeNode *node, const ObjectSpaceRay &ray, float &tmin, float &tmax,
-                DeviceStack<STACK_SIZE, NodeSearchData> &nodes) {
-    auto a = (int) node->splitting_axis;
-    auto thit = (node->splitting_value - ray.origin()[a]) / ray.direction()[a];
-    auto nodes_to_search = order_subnodes(ray, node, tmin, tmax);
-
-    if (thit >= tmax || thit < 0) {
-        return intersect_node(nodes_to_search.item1, ray, tmin, tmax, nodes);
-    } else if (thit <= tmin) {
-        return intersect_node(nodes_to_search.item2, ray, tmin, tmax, nodes);
-    } else {
-        nodes.push({
-                           nodes_to_search.item2,
-                           thit,
-                           tmax
-                   });
-        return intersect_node(nodes_to_search.item1, ray, tmin, thit, nodes);
-    }
-}
-
-__device__ bool
-intersect_node(TreeNode *node, const ObjectSpaceRay &ray, float &tmin, float &tmax,
-               DeviceStack<STACK_SIZE, NodeSearchData> &nodes) {
-    if (node->faces) {
-        return intersect_leaf(node, ray, tmin, tmax, nodes);
-    } else {
-        return intersect_split(node, ray, tmin, tmax, nodes);
-    }
-}
-
-__device__ bool
-intersect_leaf(TreeNode *node, const glm::vec3 *vertices, const ObjectSpaceRay &ray, float &tmin, float &tmax,
-               DeviceStack<STACK_SIZE, NodeSearchData> &nodes) {
-    auto success = false;
-    for (auto i = 0; i < node->face_count; ++i) {
-        auto v0 = vertices[node->faces[i].i0];
-        auto v1 = vertices[node->faces[i].i1];
-        auto v2 = vertices[node->faces[i].i2];
-
-        float hit_distance = 0.0f;
-
-        float u = 0.0f;
-        float v = 0.0f;
-        auto hit_result = hit_triangle(ray, v0, v1, v2, u, v, hit_distance);
-
-        if (hit_result && hit_distance < tmax) {
-            tmax = hit_distance;
-            success = true;
+    while(!is_leaf(current)) {
+        if(random.value() >= 0.5f) {
+            current = current->left;
+        }
+        else {
+            current = current->right;
         }
     }
 
-    if (!success) {
-        if (nodes.is_empty()) {
-            return false;
-        } else {
-            auto node = nodes.pop();
-            return intersect_node(node.node, ray, node.tmin, node.tmax, nodes);
-        }
-    }
+    auto face_index = static_cast<size_t>(random.value() * current->face_count);
 
-    return success;
+
+    return current->faces[face_index];
 }

@@ -267,6 +267,42 @@ void handle_input(GLFWwindow* window, Camera* camera, Scene *scene) {
     }
 }
 
+double cursor_x;
+double cursor_y;
+bool mouselook_active = false;
+void mouse_button_callback(GLFWwindow* window, int button, int action, int mods) {
+    if (button == GLFW_MOUSE_BUTTON_LEFT) {
+        if(action == GLFW_PRESS) {
+            glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+            glfwGetCursorPos(window, &cursor_x, &cursor_y);
+            mouselook_active = true;
+        }
+        else if(action == GLFW_RELEASE) {
+            glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+            mouselook_active = false;
+        }
+    }
+}
+
+/*fn get_forward(mat: &glm::Mat4) -> glm::Vec3 {
+let inverted = glm::inverse(mat);
+let forward = glm::normalize(inverted[2]);
+glm::vec3(forward.x, forward.y, forward.z)
+}*/
+
+glm::vec3 get_forward(const glm::mat4x4& mat) {
+   auto inverted = glm::inverse(mat);
+   auto forward = glm::normalize(inverted[2]);
+   return glm::vec3(forward);
+}
+
+void set_camera_direction(Camera *camera, float yaw, float pitch) {
+    auto xz_rotation = glm::rotate(yaw, glm::vec3(0, 1, 0));
+    auto right_vector =glm::cross(get_forward(xz_rotation), glm::vec3(0, 1, 0));
+    auto final_rotation = glm::rotate(xz_rotation, pitch, right_vector);
+    camera->set_direction(get_forward(final_rotation));
+}
+
 int main() {
     init_glfw();
 
@@ -282,23 +318,23 @@ int main() {
 
     float rot = 1.45f;
     //auto camera_position = glm::vec3(glm::cos(rot) * 10.0, 0.0000, glm::sin(rot) * 10.0f);
-    auto camera_position = glm::vec3(2.0, 1.0, 7.5f);
-    auto camera_direction = glm::normalize(glm::vec3(-7.0, 0.0, -60.0f) - camera_position);
+    auto camera_position = glm::vec3(0.0, 1.0, 7.5f);
+    auto camera_direction = glm::normalize(glm::vec3(0.0, 0.0, -60.0f) - camera_position);
     camera->set_position(camera_position);
     camera->set_direction(camera_direction);
     camera->set_up(glm::vec3(0.0, 1.0, 0.0));
-    camera->set_field_of_view(90.0 * (3.1415 / 180.0));
-    camera->set_blur_radius(0.0); // (0.03);
+    camera->set_field_of_view(75.0 * (3.1415 / 180.0));
+    camera->set_blur_radius(0.03); // (0.03);
     camera->set_focal_length(60.0);
     camera->set_shutter_speed(0.0);
     camera->set_resolution(glm::vec2(WIDTH, HEIGHT));
     camera->update();
 
     DeviceMeshLoader mesh_loader;
-    auto meshez = mesh_loader.load("/home/emil/models/house1/black_smith.obj"); // 0.5 0.35 0.5
-    // auto meshez = mesh_loader.load("/home/emil/models/apple/apple.obj"); // 0.5 0.35 0.5
-    // auto meshez = mesh_loader.load("/home/emil/models/crate/crate1.obj");
-    // auto suzanne = meshez[0];
+
+    // auto house = mesh_loader.load("/home/emil/models/apple/apple.obj"); // 0.5 0.35 0.5
+    // auto house = mesh_loader.load("/home/emil/models/crate/crate1.obj");
+    // auto suzanne = house[0];
 
     //std::vector<IndexedDeviceMesh> meshes;
     //meshes.push_back(suzanne);
@@ -311,7 +347,13 @@ int main() {
     g_verts.emplace_back(1.0f, 0.0f, 1.0f);
     g_verts.emplace_back(1.0f, 0.0f, -1.0f);
     g_verts.emplace_back(-1.0f, 0.0f, -1.0f);
-    g_verts.emplace_back(0.0f, -0.5f, 0.0f);
+    g_verts.emplace_back(0.0f, -0.5f, 0.0f); // Dummy vertex
+
+    std::vector<glm::vec3> g_normals;
+    g_normals.emplace_back(0.0f, 1.0f, 0.0f);
+    g_normals.emplace_back(0.0f, 1.0f, 0.0f);
+    g_normals.emplace_back(0.0f, 1.0f, 0.0f);
+    g_normals.emplace_back(0.0f, 1.0f, 0.0f);
 
     /*g_verts.emplace_back(-1.0f, 0.1f, 1.0f);
     g_verts.emplace_back(1.0f, 0.1f, 1.0f);
@@ -336,7 +378,8 @@ int main() {
     g_texcoords.emplace_back(1.0f, 0.0f);
     g_texcoords.emplace_back(0.0f, 0.0f);*/
 
-    auto plane = create_device_type<IndexedDeviceMesh>(g_verts, g_faces, g_texcoords, material);
+    material.set_reflectivity(0.5f);
+    auto plane = create_device_type<IndexedDeviceMesh>(g_verts, g_normals, g_faces, g_texcoords, material);
 
     std::vector<SceneEntity> entities;
 
@@ -345,24 +388,36 @@ int main() {
             plane,
             WorldTransformBuilder()
                 .with_translation({0.0, -3.3, 0.0})
-                .with_scale({10.0, 1.0, 10.0})
+                .with_scale({20.0, 1.0, 20.0})
                 .build()
             );
 
-    for(int i = 0; i < 10; ++i) {
-        entities.emplace_back(meshez[0],
+    auto crate = mesh_loader.load("/home/emil/models/crate/crate1.obj");
+    crate[0]->material().set_emission(glm::vec3(1.0, 1.0, 1.0));
+    //crate[0]->material().set_reflectivity(0.6f);
+
+    auto house = mesh_loader.load("/home/emil/models/house1/black_smith.obj"); // 0.5 0.35 0.5
+
+    for(int i = 0; i < 1; ++i) {
+        entities.emplace_back(house[0],
                               WorldTransformBuilder()
-                                      .with_translation({-7.0, 0.0, i * -12.0})
+                                      .with_translation({0.0, 0.0, i * -12.0})
                                       .with_rotation({0, 1.57, 0})
                                       .with_uniform_scale(1000.0f)
                                       .build());
     }
 
+    entities.emplace_back(crate[0],
+                          WorldTransformBuilder()
+                          .with_translation({0.5, -1.0, 0.0})
+                          .with_uniform_scale(2.0f)
+                          .build());
+
 
     Scene *scene;
     cudaMallocManaged(&scene, sizeof(Scene));
     new(scene) Scene;
-    scene->build(meshez, entities);
+    scene->build(house, entities);
 
     auto random = create_device_type<RandomGeneratorPool>(2048, 123);
 
@@ -372,9 +427,37 @@ int main() {
     int frame_counter = 0;
     size_t sample = 0;
 
+    glfwSetInputMode(window.handle(), GLFW_RAW_MOUSE_MOTION, GLFW_TRUE);
+    glfwSetMouseButtonCallback(window.handle(), mouse_button_callback);
+
     device_autofocus(camera, scene, WIDTH, HEIGHT);
-    while (!window.should_close()) {
+    auto run = true;
+
+    float yaw = 3.14f;
+    float pitch = 0.0f;
+    while (run && !window.should_close()) {
         handle_input(window.handle(), camera, scene);
+
+        if(glfwGetKey(window.handle(), GLFW_KEY_ESCAPE)){
+            run = false;
+        }
+
+        if(mouselook_active) {
+            set_camera_direction(camera, yaw, pitch);
+
+            double current_cursor_x, current_cursor_y;
+            glfwGetCursorPos(window.handle(), &current_cursor_x, &current_cursor_y);
+
+            yaw = yaw - (current_cursor_x - cursor_x) * 0.01f;
+            pitch = pitch + (current_cursor_y - cursor_y) * 0.01f;
+            pitch = glm::clamp(pitch, -1.3f, 1.3f);
+            /*float speed = 1.0f;
+            camera_rotation.y += (current_cursor_x - cursor_x) / 100.0f;
+
+            camera->set_direction(glm::vec3(glm::sin(camera_rotation.y), 0.0, glm::cos(camera_rotation.y)));*/
+            cursor_x = current_cursor_x;
+            cursor_y = current_cursor_y;
+        }
 
         if(camera->needs_update()) {
             camera->update();
@@ -391,10 +474,10 @@ int main() {
             max_duration = frame_duration.count();
         }
         total_duration += frame_duration.count();
-        std::cout << '\r' << "Frame time: " << frame_duration.count() << "ms\t\t Avg (10 frames): "
+        /*std::cout << '\r' << "Frame time: " << frame_duration.count() << "ms\t\t Avg (10 frames): "
                   << (total_duration / frame_counter) << "ms\t\t Max: " << max_duration << "ms\tt Sample: "
                   << sample << "                    "
-                  << std::flush;
+                  << std::flush;*/
 
         if (frame_counter == 10) {
             frame_counter = 0;

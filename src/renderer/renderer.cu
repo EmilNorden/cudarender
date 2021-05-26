@@ -14,6 +14,7 @@
 #include <stdio.h>
 #include <cuda_gl_interop.h>
 #include "device_random.cuh"
+#include "transform.cuh"
 
 cudaError_t cuda();
 
@@ -81,6 +82,78 @@ __device__ bool hit_sphere(const WorldSpaceRay &ray) {
     return true;
 }
 
+template<typename T>
+__device__ T lerp(const T &a, const T &b, float factor) {
+    return a * (1.0f - factor) + b * factor;
+}
+
+__device__ glm::vec3 trace_ray(const WorldSpaceRay &ray, Scene *scene, RandomGenerator &random, int depth) {
+    if (depth == 0) {
+        return glm::vec3(0, 0, 0);
+    }
+
+    Intersection intersection;
+    SceneEntity *entity = nullptr;
+    if (scene->intersect(ray, intersection, &entity)) {
+
+        auto intersection_coordinate = ray.origin() + (ray.direction() * intersection.distance);
+        auto &material = entity->mesh()->material();
+        float w = 1.0f - intersection.u - intersection.v;
+        glm::vec3 reflected_color{};
+
+        if (material.reflectivity() > 0.0f) {
+            auto n0 = entity->mesh()->normals()[intersection.i0];
+            auto n1 = entity->mesh()->normals()[intersection.i1];
+            auto n2 = entity->mesh()->normals()[intersection.i2];
+
+            auto world_space_normal = entity->world().transform_normal(
+                    n0 * w + n1 * intersection.u + n2 * intersection.v);
+
+            auto reflected_direction = glm::reflect(ray.direction(), world_space_normal);
+
+            auto reflected_ray = WorldSpaceRay{
+                    intersection_coordinate,
+                    reflected_direction
+            };
+
+            reflected_color = trace_ray(reflected_ray, scene, random, depth - 1);
+        }
+
+        auto texcoord0 = entity->mesh()->texture_coordinates()[intersection.i0];
+        auto texcoord1 = entity->mesh()->texture_coordinates()[intersection.i1];
+        auto texcoord2 = entity->mesh()->texture_coordinates()[intersection.i2];
+
+        auto texture_uv = texcoord0 * w + texcoord1 * intersection.u + texcoord2 * intersection.v;
+
+        auto diffuse_color = entity->mesh()->material().diffuse()->sample(
+                texture_uv); // glm::vec3(0.0f, 1.0f, 0.0f);
+
+        auto light = scene->get_random_emissive_entity(random);
+
+        auto surface = light->get_random_emissive_surface(random);
+
+        auto shadow_ray = WorldSpaceRay {
+                intersection_coordinate,
+                glm::normalize(surface.world_coordinate - intersection_coordinate)
+        };
+
+        glm::vec3 incoming_light{};
+        Intersection shadow_intersection;
+        SceneEntity *shadow_entity;
+        if(scene->intersect(shadow_ray, shadow_intersection, &shadow_entity)) {
+            if(shadow_entity == light) {
+                incoming_light = shadow_entity->mesh()->material().emission();
+            }
+        }
+
+        return material.emission() + (incoming_light * lerp(diffuse_color, reflected_color, material.reflectivity()));
+    } else {
+        return glm::vec3(0, 0, 0);
+    }
+
+
+}
+
 
 __global__ void
 cudaRender(float *g_odata, Camera *camera, Scene *scene, RandomGeneratorPool *random_pool, int width, int height,
@@ -100,27 +173,17 @@ cudaRender(float *g_odata, Camera *camera, Scene *scene, RandomGeneratorPool *ra
     auto global_block_id = block_num_in_grid;
     auto random = random_pool->get_generator(global_block_id);
 
-    //uchar4 c4 = make_uchar4((x & 0x20) ? 100 : 0, 0, (y & 0x20) ? 100 : 0, 0);
-    // g_odata[y*width + x] = rgbToInt(c4.z, c4.y, c4.x);
-
     if (x < width && y < height) {
-        // auto ray = camera->cast_ray(x, y);
         auto ray = camera->cast_perturbed_ray(x, y, random);
+        auto color = trace_ray(ray, scene, random, 3);
 
-        //auto hit = hit_sphere(ray);
-        auto color = scene->hit(ray);
 
         glm::vec3 previous_color;
-
-        auto pixel_index = y * (width*4) + (x*4);
-
-        g_odata[pixel_index] = ((g_odata[pixel_index] * (float)sample) + color.x) / (sample + 1.0f);
-        g_odata[pixel_index + 1] = ((g_odata[pixel_index + 1] * (float)sample) + color.y) / (sample + 1.0f);
-        g_odata[pixel_index + 2] = ((g_odata[pixel_index + 2] * (float)sample) + color.z) / (sample + 1.0f);
+        auto pixel_index = y * (width * 4) + (x * 4);
+        g_odata[pixel_index] = ((g_odata[pixel_index] * (float) sample) + color.x) / (sample + 1.0f);
+        g_odata[pixel_index + 1] = ((g_odata[pixel_index + 1] * (float) sample) + color.y) / (sample + 1.0f);
+        g_odata[pixel_index + 2] = ((g_odata[pixel_index + 2] * (float) sample) + color.z) / (sample + 1.0f);
         g_odata[pixel_index + 3] = 1.0;
-
-        //auto previous_r = previous_color & 0x000000
-//         g_odata[y*width + x] = ((previous_color * sample) + rgbToInt(color.x, color.y, color.z)) / (sample + 1);
     }
 
 }
@@ -128,7 +191,7 @@ cudaRender(float *g_odata, Camera *camera, Scene *scene, RandomGeneratorPool *ra
 void Renderer::render(Camera *camera, Scene *scene, RandomGeneratorPool *random, int width, int height, size_t sample) {
     dim3 block(16, 16, 1);
     dim3 grid(width / block.x, std::ceil(height / (float) block.y), 1);
-    cudaRender<<<grid, block, 0>>>((float*) m_cuda_render_buffer, camera, scene, random, width, height, sample);
+    cudaRender<<<grid, block, 0>>>((float *) m_cuda_render_buffer, camera, scene, random, width, height, sample);
 
     cudaArray *texture_ptr;
     cuda_assert(cudaGraphicsMapResources(1, &m_cuda_tex_resource, 0));

@@ -9,7 +9,10 @@ __global__ void autofocus_kernel(Camera* camera, const Scene* scene, size_t widt
 
     WorldSpaceRay ray = camera->cast_ray(image_center_x, image_center_y);
 
-    auto closest_intersection = scene->closest_intersection(ray);
+    float closest_intersection;
+    if(!scene->closest_intersection(ray, closest_intersection)) {
+        closest_intersection = 1000.0f;
+    }
 
     camera->set_focal_length(closest_intersection);
 }

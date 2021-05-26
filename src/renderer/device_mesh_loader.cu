@@ -123,7 +123,7 @@ __host__ IndexedDeviceMesh* load_single_mesh(aiMesh* mesh, const vector<DeviceMa
     // TODO: An idea for later. Perhaps I can allocate space for all meshes at once, and return a single pointer to all instead of a vector of pointers
     IndexedDeviceMesh *device_mesh;
     cudaMallocManaged(&device_mesh, sizeof(IndexedDeviceMesh));
-    return new(device_mesh) IndexedDeviceMesh{vertices, faces_from_indices(indices), texture_coords, material};
+    return new(device_mesh) IndexedDeviceMesh{vertices, normals, faces_from_indices(indices), texture_coords, material};
 }
 
 __host__ DeviceMaterial load_single_material(aiMaterial *material, const filesystem::path& model_directory) {
