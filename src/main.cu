@@ -17,6 +17,7 @@
 #include "renderer/device_mesh_loader.cuh"
 #include "renderer/device_random.cuh"
 #include "renderer/autofocus.cuh"
+#include "renderer/device_texture_loader.cuh"
 
 #if defined(RENDER_DEBUG)
 #define DEBUG_ASSERT_SDL(x) {                                   \
@@ -92,21 +93,37 @@ static const char *glsl_drawtex_fragshader_src =
         "   	vec4 c = texture(tex, ourTexCoord);\n"
         "   	color = c;\n"
         "}\n";
-
+void keyboard_func(GLFWwindow* window, int key, int scancode, int action, int mods) {}
 /*
-// QUAD GEOMETRY
-GLfloat vertices[] = {
-        // Positions          // Colors           // Texture Coords
-        1.0f, 1.0f, 0.5f, 1.0f, 0.0f, 0.0f, 1.0f, 1.0f,  // Top Right
-        1.0f, -1.0f, 0.5f, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f,  // Bottom Right
-        -1.0f, -1.0f, 0.5f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f,  // Bottom Left
-        -1.0f, 1.0f, 0.5f, 1.0f, 1.0f, 0.0f, 0.0f, 1.0f // Top Left
-};
-// you can also put positions, colors and coordinates in seperate VBO's
-GLuint indices[] = {  // Note that we start from 0!
-        0, 1, 3,  // First Triangle
-        1, 2, 3   // Second Triangle
-};
+Camera *camera;
+Scene * scene;
+
+void keyboard_func(GLFWwindow* window, int key, int scancode, int action, int mods){
+    auto speed = 0.1f;
+    if(key == GLFW_KEY_W) {
+        camera->set_position(camera->position() + camera->direction() * speed);
+    }
+    else if(key == GLFW_KEY_S) {
+        camera->set_position(camera->position() - camera->direction() * speed);
+    }
+    else if(key == GLFW_KEY_D) {
+        auto right = glm::cross(camera->up(), camera->direction());
+        camera->set_position(camera->position() + right * speed);
+    }
+    else if(key == GLFW_KEY_A) {
+        auto right = glm::cross(camera->up(), camera->direction());
+        camera->set_position(camera->position() - right * speed);
+    }
+    else if(key == GLFW_KEY_Z) {
+        camera->set_position(camera->position() + camera->up() * speed);
+    }
+    else if(key == GLFW_KEY_X) {
+        camera->set_position(camera->position()  camera->up() * speed);
+    }
+    else if(key == GLFW_KEY_SPACE) {
+        device_autofocus(camera,scene, WIDTH, HEIGHT);
+    }
+}
 */
 
 void check_for_gl_errors() {
@@ -222,10 +239,38 @@ T *create_device_type(Args &&... args) {
     return new(object) T(std::forward<Args>(args)...);
 }
 
+void handle_input(GLFWwindow* window, Camera* camera, Scene *scene) {
+
+    auto speed = 0.1f;
+    if(glfwGetKey(window, GLFW_KEY_W)) {
+        camera->set_position(camera->position() + camera->direction() * speed);
+    }
+    if(glfwGetKey(window, GLFW_KEY_S)) {
+        camera->set_position(camera->position() - camera->direction() * speed);
+    }
+    if(glfwGetKey(window, GLFW_KEY_D)) {
+        auto right = glm::cross(camera->up(), camera->direction());
+        camera->set_position(camera->position() + right * speed);
+    }
+    if(glfwGetKey(window, GLFW_KEY_A)) {
+        auto right = glm::cross(camera->up(), camera->direction());
+        camera->set_position(camera->position() - right * speed);
+    }
+    if(glfwGetKey(window, GLFW_KEY_Z)) {
+        camera->set_position(camera->position() + camera->up() * speed);
+    }
+    if(glfwGetKey(window, GLFW_KEY_X)) {
+        camera->set_position(camera->position() - camera->up() * speed);
+    }
+     if(glfwGetKey(window, GLFW_KEY_SPACE)) {
+        device_autofocus(camera,scene, WIDTH, HEIGHT);
+    }
+}
+
 int main() {
     init_glfw();
 
-    GlWindow window{"Hello, world!", WIDTH, HEIGHT};
+    GlWindow window{"Hello, world!", WIDTH, HEIGHT, keyboard_func};
 
     init_gl_buffers();
 
@@ -233,17 +278,17 @@ int main() {
 
     Renderer rend{opengl_tex_cuda, WIDTH, HEIGHT};
 
-    Camera *camera = create_device_type<Camera>();
+    auto camera = create_device_type<Camera>();
 
     float rot = 1.45f;
     //auto camera_position = glm::vec3(glm::cos(rot) * 10.0, 0.0000, glm::sin(rot) * 10.0f);
-    auto camera_position = glm::vec3(2.0, 0.0, 7.5f);
+    auto camera_position = glm::vec3(2.0, 1.0, 7.5f);
     auto camera_direction = glm::normalize(glm::vec3(-7.0, 0.0, -60.0f) - camera_position);
     camera->set_position(camera_position);
     camera->set_direction(camera_direction);
     camera->set_up(glm::vec3(0.0, 1.0, 0.0));
     camera->set_field_of_view(90.0 * (3.1415 / 180.0));
-    camera->set_blur_radius(0.1);
+    camera->set_blur_radius(0.0); // (0.03);
     camera->set_focal_length(60.0);
     camera->set_shutter_speed(0.0);
     camera->set_resolution(glm::vec2(WIDTH, HEIGHT));
@@ -258,7 +303,51 @@ int main() {
     //std::vector<IndexedDeviceMesh> meshes;
     //meshes.push_back(suzanne);
 
+    auto grass = DeviceTextureLoader {}.load("/home/emil/textures/Grass004_4K-JPG/color.jpg");
+    auto material = DeviceMaterial{grass};
+
+    std::vector<glm::vec3> g_verts;
+    g_verts.emplace_back(-1.0f, 0.0f, 1.0f);
+    g_verts.emplace_back(1.0f, 0.0f, 1.0f);
+    g_verts.emplace_back(1.0f, 0.0f, -1.0f);
+    g_verts.emplace_back(-1.0f, 0.0f, -1.0f);
+    g_verts.emplace_back(0.0f, -0.5f, 0.0f);
+
+    /*g_verts.emplace_back(-1.0f, 0.1f, 1.0f);
+    g_verts.emplace_back(1.0f, 0.1f, 1.0f);
+    g_verts.emplace_back(1.0f, 0.1f, -1.0f);
+    g_verts.emplace_back(-1.0f, 0.1f, -1.0f);*/
+
+    std::vector<TriangleFace> g_faces;
+    g_faces.push_back({0, 1, 2});
+    g_faces.push_back({ 0, 2, 3});
+
+    /*g_faces.push_back({4+0, 4+1, 4+2});
+    g_faces.push_back({ 4+0, 4+2, 4+3});*/
+
+    std::vector<glm::vec2> g_texcoords;
+    g_texcoords.emplace_back(0.0f, 1.0f);
+    g_texcoords.emplace_back(1.0f, 1.0f);
+    g_texcoords.emplace_back(1.0f, 0.0f);
+    g_texcoords.emplace_back(0.0f, 0.0f);
+
+    /*g_texcoords.emplace_back(0.0f, 1.0f);
+    g_texcoords.emplace_back(1.0f, 1.0f);
+    g_texcoords.emplace_back(1.0f, 0.0f);
+    g_texcoords.emplace_back(0.0f, 0.0f);*/
+
+    auto plane = create_device_type<IndexedDeviceMesh>(g_verts, g_faces, g_texcoords, material);
+
     std::vector<SceneEntity> entities;
+
+
+    entities.emplace_back(
+            plane,
+            WorldTransformBuilder()
+                .with_translation({0.0, -3.3, 0.0})
+                .with_scale({10.0, 1.0, 10.0})
+                .build()
+            );
 
     for(int i = 0; i < 10; ++i) {
         entities.emplace_back(meshez[0],
@@ -268,7 +357,6 @@ int main() {
                                       .with_uniform_scale(1000.0f)
                                       .build());
     }
-
 
 
     Scene *scene;
@@ -286,12 +374,13 @@ int main() {
 
     device_autofocus(camera, scene, WIDTH, HEIGHT);
     while (!window.should_close()) {
+        handle_input(window.handle(), camera, scene);
 
-        /*auto camera_position = glm::vec3(glm::cos(rotation) * 0.0075f, 0.00, glm::sin(rotation) * 0.0075f);
-        auto camera_direction = glm::normalize(glm::vec3(0.0, 0.0, 0.0f) - camera_position);
-        camera->set_position(camera_position);
-        camera->set_direction(camera_direction);
-        camera->update();*/
+        if(camera->needs_update()) {
+            camera->update();
+            sample = 0;
+        }
+
         auto start = std::chrono::high_resolution_clock::now();
         display(camera, scene, rend, window, random, sample);
         ++sample;

@@ -9,9 +9,6 @@
 #include <stdexcept>
 
 
-void keyboard_func(GLFWwindow* window, int key, int scancode, int action, int mods){
-}
-
 // QUAD GEOMETRY
 static GLfloat vertices[] = {
         // Positions          // Colors           // Texture Coords
@@ -27,7 +24,7 @@ static GLuint indices[] = {  // Note that we start from 0!
 };
 
 
-GlWindow::GlWindow(const std::string& title, int width, int height)
+GlWindow::GlWindow(const std::string& title, int width, int height, GLFWkeyfun key_callback)
     : m_window(nullptr), m_width(width), m_height(height) {
 
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
@@ -43,7 +40,7 @@ GlWindow::GlWindow(const std::string& title, int width, int height)
     // Not sure the constructor should be doing this
     glfwMakeContextCurrent(m_window);
     glfwSwapInterval(1);
-    glfwSetKeyCallback(m_window, keyboard_func);
+    glfwSetKeyCallback(m_window, key_callback);
 
     GlewHelper::init();
 

@@ -26,6 +26,8 @@ add_library(renderer
         renderer/device_stack.cuh
         renderer/device_texture.cu
         renderer/device_texture.cuh
+        renderer/device_texture_loader.cu
+        renderer/device_texture_loader.cuh
         renderer/intersection.cuh
         renderer/kd_tree.cuh
         renderer/ray.cuh

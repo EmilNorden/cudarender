@@ -7,9 +7,11 @@
 
 class DeviceTexture {
 public:
-    __host__ DeviceTexture(const std::vector<uint8_t>& pixels, size_t width, size_t height);
+    __host__ DeviceTexture(const std::vector<uint8_t> &pixels, size_t width, size_t height);
 
-    __device__ glm::vec3 sample(const glm::vec2& uv) const;
+    [[nodiscard]] __device__ glm::vec3 sample(const glm::vec2 &uv) const;
+
+    [[nodiscard]] __device__ glm::vec3 sample_bilinear(const glm::vec2 &uv) const;
 
 
 private:

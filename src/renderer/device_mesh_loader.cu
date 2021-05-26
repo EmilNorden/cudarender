@@ -1,6 +1,6 @@
 #include "device_mesh_loader.cuh"
 
-#include "device_texture.cuh"
+#include "device_texture_loader.cuh"
 
 #include <filesystem>
 #include <glm/glm.hpp>
@@ -8,7 +8,6 @@
 #include <assimp/postprocess.h>
 #include <assimp/Importer.hpp>
 #include <iostream>
-#include <FreeImage.h>
 
 using namespace std;
 
@@ -58,7 +57,6 @@ __host__ vector<IndexedDeviceMesh*> DeviceMeshLoader::load(const string& path) {
 
 __host__ IndexedDeviceMesh* load_single_mesh(aiMesh* mesh, const vector<DeviceMaterial> &materials) {
     std::vector<glm::vec3> vertices;
-    //std::vector<tri_index> indices;
     std::vector<int> indices;
     std::vector<glm::vec3> normals;
     std::vector<glm::vec3> tangents;
@@ -128,46 +126,6 @@ __host__ IndexedDeviceMesh* load_single_mesh(aiMesh* mesh, const vector<DeviceMa
     return new(device_mesh) IndexedDeviceMesh{vertices, faces_from_indices(indices), texture_coords, material};
 }
 
-__host__ DeviceTexture* load_device_texture(const filesystem::path& model_directory, const std::string& filename) {
-    auto texture_path = model_directory;
-
-    //texture_path /= filename;
-    texture_path /= "Blksmith.jpg";
-
-    //TODO This should be cached
-
-
-    FREE_IMAGE_FORMAT type = FreeImage_GetFileType(texture_path.string().c_str());
-
-    if (type == FIF_UNKNOWN) {
-        type = FreeImage_GetFIFFromFilename(texture_path.string().c_str());
-
-        if (type == FIF_UNKNOWN)
-            throw std::runtime_error("Unable to determine texture format.");
-    }
-
-    FIBITMAP* bitmap = FreeImage_Load(type, texture_path.string().c_str());
-    auto width = FreeImage_GetWidth(bitmap);
-    auto height = FreeImage_GetHeight(bitmap);
-    std::vector<uint8_t> pixels;
-    pixels.reserve(3 * width*height);
-    for(auto y = 0; y < height; ++y) {
-        for(auto x = 0; x < width; ++x) {
-            RGBQUAD pixel;
-            FreeImage_GetPixelColor(bitmap, x, y, &pixel);
-            pixels.push_back(pixel.rgbRed);
-            pixels.push_back(pixel.rgbGreen);
-            pixels.push_back(pixel.rgbBlue);
-        }
-    }
-
-    FreeImage_Unload(bitmap);
-
-    DeviceTexture *texture;
-    cudaMallocManaged(&texture, sizeof(DeviceTexture));
-    return new (texture) DeviceTexture{pixels, width, height};
-}
-
 __host__ DeviceMaterial load_single_material(aiMaterial *material, const filesystem::path& model_directory) {
     aiString name;
     aiGetMaterialString(material, AI_MATKEY_NAME, &name);
@@ -225,7 +183,12 @@ __host__ DeviceMaterial load_single_material(aiMaterial *material, const filesys
 
     DeviceTexture *diffuse_texture = nullptr;
     if (material->GetTexture(aiTextureType_DIFFUSE, 0, &p) == AI_SUCCESS) {
-        diffuse_texture = load_device_texture(model_directory, p.C_Str());
+
+        auto texture_path = model_directory;
+
+        texture_path /= p.C_Str();
+
+        diffuse_texture = DeviceTextureLoader{}.load(texture_path.string()); // TODO: Inject DeviceTextureLoader
         // diffuseTexture = load_texture(p, model_path);
     }
 
