@@ -318,7 +318,7 @@ int main() {
 
     float rot = 1.45f;
     //auto camera_position = glm::vec3(glm::cos(rot) * 10.0, 0.0000, glm::sin(rot) * 10.0f);
-    auto camera_position = glm::vec3(0.0, 1.0, 7.5f);
+    auto camera_position = glm::vec3(0.0, -1.5, 0.5f);
     auto camera_direction = glm::normalize(glm::vec3(0.0, 0.0, -60.0f) - camera_position);
     camera->set_position(camera_position);
     camera->set_direction(camera_direction);
@@ -339,14 +339,19 @@ int main() {
     //std::vector<IndexedDeviceMesh> meshes;
     //meshes.push_back(suzanne);
 
-    auto grass = DeviceTextureLoader {}.load("/home/emil/textures/Grass004_4K-JPG/color.jpg");
+    cudaDeviceSetLimit(cudaLimitStackSize, 2048);
+
+    auto grass = DeviceTextureLoader {}.load("/home/emil/textures/Metal004_4K-JPG/color.jpg");
+    auto normal_map = DeviceTextureLoader {}.load("/home/emil/textures/Metal004_4K-JPG/normal.jpg");
     auto material = DeviceMaterial{grass};
+    material.set_normal_map(normal_map);
+    material.set_uv_scale(10.0f);
 
     std::vector<glm::vec3> g_verts;
-    g_verts.emplace_back(-1.0f, 0.0f, 1.0f);
-    g_verts.emplace_back(1.0f, 0.0f, 1.0f);
-    g_verts.emplace_back(1.0f, 0.0f, -1.0f);
-    g_verts.emplace_back(-1.0f, 0.0f, -1.0f);
+    g_verts.emplace_back(-20.0f, 0.0f, 20.0f);
+    g_verts.emplace_back(20.0f, 0.0f, 20.0f);
+    g_verts.emplace_back(20.0f, 0.0f, -20.0f);
+    g_verts.emplace_back(-20.0f, 0.0f, -20.0f);
     g_verts.emplace_back(0.0f, -0.5f, 0.0f); // Dummy vertex
 
     std::vector<glm::vec3> g_normals;
@@ -354,6 +359,18 @@ int main() {
     g_normals.emplace_back(0.0f, 1.0f, 0.0f);
     g_normals.emplace_back(0.0f, 1.0f, 0.0f);
     g_normals.emplace_back(0.0f, 1.0f, 0.0f);
+
+    std::vector<glm::vec3> g_bitangents;
+    g_bitangents.emplace_back(0.0f, 0.0f, 1.0f);
+    g_bitangents.emplace_back(0.0f, 0.0f, 1.0f);
+    g_bitangents.emplace_back(0.0f, 0.0f, 1.0f);
+    g_bitangents.emplace_back(0.0f, 0.0f, 1.0f);
+
+    std::vector<glm::vec3> g_tangents;
+    g_tangents.emplace_back(1.0f, 0.0f, 0.0f);
+    g_tangents.emplace_back(1.0f, 0.0f, 0.0f);
+    g_tangents.emplace_back(1.0f, 0.0f, 0.0f);
+    g_tangents.emplace_back(1.0f, 0.0f, 0.0f);
 
     /*g_verts.emplace_back(-1.0f, 0.1f, 1.0f);
     g_verts.emplace_back(1.0f, 0.1f, 1.0f);
@@ -379,7 +396,7 @@ int main() {
     g_texcoords.emplace_back(0.0f, 0.0f);*/
 
     material.set_reflectivity(0.5f);
-    auto plane = create_device_type<IndexedDeviceMesh>(g_verts, g_normals, g_faces, g_texcoords, material);
+    auto plane = create_device_type<IndexedDeviceMesh>(g_verts, g_normals, g_tangents, g_bitangents, g_faces, g_texcoords, material);
 
     std::vector<SceneEntity> entities;
 
@@ -388,7 +405,7 @@ int main() {
             plane,
             WorldTransformBuilder()
                 .with_translation({0.0, -3.3, 0.0})
-                .with_scale({20.0, 1.0, 20.0})
+                .with_scale({1.0, 1.0, 1.0})
                 .build()
             );
 
@@ -430,11 +447,14 @@ int main() {
     glfwSetInputMode(window.handle(), GLFW_RAW_MOUSE_MOTION, GLFW_TRUE);
     glfwSetMouseButtonCallback(window.handle(), mouse_button_callback);
 
-    device_autofocus(camera, scene, WIDTH, HEIGHT);
+
     auto run = true;
 
-    float yaw = 3.14f;
-    float pitch = 0.0f;
+    float yaw = 3.14f + 0.2f;
+    float pitch = 0.25f;
+
+    set_camera_direction(camera, yaw, pitch);
+    device_autofocus(camera, scene, WIDTH, HEIGHT);
     while (run && !window.should_close()) {
         handle_input(window.handle(), camera, scene);
 
@@ -474,10 +494,10 @@ int main() {
             max_duration = frame_duration.count();
         }
         total_duration += frame_duration.count();
-        /*std::cout << '\r' << "Frame time: " << frame_duration.count() << "ms\t\t Avg (10 frames): "
+        std::cout << '\r' << "Frame time: " << frame_duration.count() << "ms\t\t Avg (10 frames): "
                   << (total_duration / frame_counter) << "ms\t\t Max: " << max_duration << "ms\tt Sample: "
                   << sample << "                    "
-                  << std::flush;*/
+                  << std::flush;
 
         if (frame_counter == 10) {
             frame_counter = 0;

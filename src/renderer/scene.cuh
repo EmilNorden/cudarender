@@ -95,7 +95,7 @@ public:
 
                     auto texture_uv = texcoord0 * w + texcoord1 * intersection.u + texcoord2 * intersection.v;
 
-                    result_color = m_entities[i].mesh()->material().diffuse()->sample(
+                    result_color = m_entities[i].mesh()->material().sample_diffuse(
                             texture_uv); // glm::vec3(0.0f, 1.0f, 0.0f);
                 }
             }

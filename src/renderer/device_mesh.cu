@@ -141,8 +141,17 @@ hit_triangle(const ObjectSpaceRay &ray, glm::vec3 v1, glm::vec3 v2, glm::vec3 v3
     return false;
 }
 
+template <typename T>
+void transfer_vector_to_device_memory(const std::vector<T>& items, T** device_memory)
+{
+    cudaMalloc(device_memory, sizeof(T) * items.size());
+    cudaMemcpy(*device_memory, items.data(), sizeof(T) * items.size(), cudaMemcpyHostToDevice);
+}
+
 __host__ IndexedDeviceMesh::IndexedDeviceMesh(const std::vector<glm::vec3> &vertices,
                                               const std::vector<glm::vec3> &normals,
+                                              const std::vector<glm::vec3> &tangents,
+                                              const std::vector<glm::vec3> &bitangents,
                                               const std::vector<TriangleFace> &faces,
                                               const std::vector<glm::vec2> &tex_coords,
                                               const DeviceMaterial &material)
@@ -155,6 +164,14 @@ __host__ IndexedDeviceMesh::IndexedDeviceMesh(const std::vector<glm::vec3> &vert
 
     cudaMalloc(&m_normals, sizeof(glm::vec3) * normals.size());
     cudaMemcpy(m_normals, normals.data(), sizeof(glm::vec3) * normals.size(), cudaMemcpyHostToDevice);
+
+    cudaMalloc(&m_tangents, sizeof(glm::vec3) * tangents.size());
+    cudaMemcpy(m_tangents, tangents.data(), sizeof(glm::vec3) * tangents.size(), cudaMemcpyHostToDevice);
+
+    cudaMalloc(&m_bitangents, sizeof(glm::vec3) * bitangents.size());
+    cudaMemcpy(m_bitangents, bitangents.data(), sizeof(glm::vec3) * bitangents.size(), cudaMemcpyHostToDevice);
+    //transfer_vector_to_device_memory(tangents, &m_tangents);
+    // transfer_vector_to_device_memory(bitangents, &m_bitangents);
 
     // cudaMalloc(&m_faces, sizeof(TriangleFace) * faces.size());
 

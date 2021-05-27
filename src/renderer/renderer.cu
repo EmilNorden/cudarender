@@ -15,6 +15,7 @@
 #include <cuda_gl_interop.h>
 #include "device_random.cuh"
 #include "transform.cuh"
+#include "geometry_helpers.cuh"
 
 cudaError_t cuda();
 
@@ -99,16 +100,47 @@ __device__ glm::vec3 trace_ray(const WorldSpaceRay &ray, Scene *scene, RandomGen
         auto intersection_coordinate = ray.origin() + (ray.direction() * intersection.distance);
         auto &material = entity->mesh()->material();
         float w = 1.0f - intersection.u - intersection.v;
+
+        auto texcoord0 = entity->mesh()->texture_coordinates()[intersection.i0];
+        auto texcoord1 = entity->mesh()->texture_coordinates()[intersection.i1];
+        auto texcoord2 = entity->mesh()->texture_coordinates()[intersection.i2];
+
+        auto texture_uv = texcoord0 * w + texcoord1 * intersection.u + texcoord2 * intersection.v;
+
+        // Calculate normal
+        auto n0 = entity->mesh()->normals()[intersection.i0];
+        auto n1 = entity->mesh()->normals()[intersection.i1];
+        auto n2 = entity->mesh()->normals()[intersection.i2];
+        auto object_space_normal = glm::normalize(n0 * w + n1 * intersection.u + n2 * intersection.v);
+
+        // return object_space_normal;
+
+        if(material.has_normal_map()) {
+            auto t0 = entity->mesh()->tangents()[intersection.i0];
+            auto t1 = entity->mesh()->tangents()[intersection.i1];
+            auto t2 = entity->mesh()->tangents()[intersection.i2];
+            auto object_space_tangent = glm::normalize(t0 * w + t1 * intersection.u + t2 * intersection.v);
+
+            auto b0 = entity->mesh()->bitangents()[intersection.i0];
+            auto b1 = entity->mesh()->bitangents()[intersection.i1];
+            auto b2 = entity->mesh()->bitangents()[intersection.i2];
+            auto object_space_bitangent = glm::normalize(b0 * w + b1 * intersection.u + b2 * intersection.v);
+
+            auto sampled_normal = material.sample_normal(texture_uv);
+
+            object_space_normal = glm::normalize(geom::get_object_space_normal_from_normal_map(object_space_normal, sampled_normal, object_space_tangent, object_space_bitangent));
+        }
+        /*else {
+            return glm::vec3(0, 1, 0);
+        }*/
+
+        auto world_space_normal = entity->world().transform_normal(object_space_normal);
+
+        // return world_space_normal;
+
+        // return world_space_normal;
         glm::vec3 reflected_color{};
-
         if (material.reflectivity() > 0.0f) {
-            auto n0 = entity->mesh()->normals()[intersection.i0];
-            auto n1 = entity->mesh()->normals()[intersection.i1];
-            auto n2 = entity->mesh()->normals()[intersection.i2];
-
-            auto world_space_normal = entity->world().transform_normal(
-                    n0 * w + n1 * intersection.u + n2 * intersection.v);
-
             auto reflected_direction = glm::reflect(ray.direction(), world_space_normal);
 
             auto reflected_ray = WorldSpaceRay{
@@ -119,13 +151,9 @@ __device__ glm::vec3 trace_ray(const WorldSpaceRay &ray, Scene *scene, RandomGen
             reflected_color = trace_ray(reflected_ray, scene, random, depth - 1);
         }
 
-        auto texcoord0 = entity->mesh()->texture_coordinates()[intersection.i0];
-        auto texcoord1 = entity->mesh()->texture_coordinates()[intersection.i1];
-        auto texcoord2 = entity->mesh()->texture_coordinates()[intersection.i2];
 
-        auto texture_uv = texcoord0 * w + texcoord1 * intersection.u + texcoord2 * intersection.v;
 
-        auto diffuse_color = entity->mesh()->material().diffuse()->sample(
+        auto diffuse_color = entity->mesh()->material().sample_diffuse(
                 texture_uv); // glm::vec3(0.0f, 1.0f, 0.0f);
 
         auto light = scene->get_random_emissive_entity(random);
@@ -142,7 +170,7 @@ __device__ glm::vec3 trace_ray(const WorldSpaceRay &ray, Scene *scene, RandomGen
         SceneEntity *shadow_entity;
         if(scene->intersect(shadow_ray, shadow_intersection, &shadow_entity)) {
             if(shadow_entity == light) {
-                incoming_light = shadow_entity->mesh()->material().emission();
+                incoming_light = glm::dot(world_space_normal, shadow_ray.direction()) * shadow_entity->mesh()->material().emission();
             }
         }
 

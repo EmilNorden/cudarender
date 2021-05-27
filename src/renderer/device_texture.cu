@@ -6,7 +6,9 @@ DeviceTexture::DeviceTexture(const std::vector<uint8_t> &pixels, size_t width, s
     cudaMemcpy(m_data, pixels.data(), sizeof(uint8_t) * pixels.size(), cudaMemcpyHostToDevice);
 }
 
-__device__ glm::vec3 get_color_at(uint8_t *data, int x, int y, size_t width) {
+__device__ glm::vec3 get_color_at(uint8_t *data, int x, int y, size_t width, size_t height) {
+    x = x % width;
+    y = y % height;
     auto index = (y * width * 3) + (x * 3);
     return {
             data[index] / 255.0f,
@@ -19,5 +21,5 @@ __device__ glm::vec3 DeviceTexture::sample(const glm::vec2 &uv) const {
     int x = uv.x * (m_width - 1);
     int y = uv.y * (m_height - 1);
 
-    return get_color_at(m_data, x, y, m_width);
+    return get_color_at(m_data, x, y, m_width, m_height);
 }

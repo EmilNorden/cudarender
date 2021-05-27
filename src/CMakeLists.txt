@@ -16,6 +16,7 @@ add_library(renderer
         renderer/coordinates.cuh
         renderer/cuda_utils.cu
         renderer/cuda_utils.cuh
+        renderer/device_material.cu
         renderer/device_material.cuh
         renderer/device_mesh_loader.cu
         renderer/device_mesh_loader.cuh
@@ -28,6 +29,8 @@ add_library(renderer
         renderer/device_texture.cuh
         renderer/device_texture_loader.cu
         renderer/device_texture_loader.cuh
+        renderer/geometry_helpers.cu
+        renderer/geometry_helpers.cuh
         renderer/intersection.cuh
         renderer/kd_tree.cuh
         renderer/ray.cuh

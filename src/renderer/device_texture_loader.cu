@@ -3,18 +3,28 @@
 #include "device_texture.cuh"
 
 #include <FreeImage.h>
-#include <stdexcept>
 #include <vector>
+#include <filesystem>
+#include <iostream>
+
+using namespace std;
 
 DeviceTexture *DeviceTextureLoader::load(const std::string &path) {
+    cout << "Loading texture " << path << endl;
+    if(!filesystem::exists(path)) {
+        cerr << "  File does not exist!" << endl;
+        exit(1);
+    }
 
     FREE_IMAGE_FORMAT type = FreeImage_GetFileType(path.c_str());
 
     if (type == FIF_UNKNOWN) {
         type = FreeImage_GetFIFFromFilename(path.c_str());
 
-        if (type == FIF_UNKNOWN)
-            throw std::runtime_error("Unable to determine texture format.");
+        if (type == FIF_UNKNOWN){
+            cerr << "  Unable to determine texture format!" << endl;
+            exit(1);
+        }
     }
 
     FIBITMAP *bitmap = FreeImage_Load(type, path.c_str());
@@ -33,6 +43,8 @@ DeviceTexture *DeviceTextureLoader::load(const std::string &path) {
     }
 
     FreeImage_Unload(bitmap);
+
+    cout << endl;
 
     DeviceTexture *texture;
     cudaMallocManaged(&texture, sizeof(DeviceTexture));

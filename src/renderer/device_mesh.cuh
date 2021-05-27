@@ -31,6 +31,8 @@ class IndexedDeviceMesh {
 public:
     __host__ IndexedDeviceMesh(const std::vector<glm::vec3> &vertices,
                                const std::vector<glm::vec3> &normals,
+                               const std::vector<glm::vec3> &tangents,
+                               const std::vector<glm::vec3> &bitangents,
                                const std::vector<TriangleFace> &faces,
                                const std::vector<glm::vec2> &tex_coords,
                                const DeviceMaterial &material);
@@ -40,6 +42,10 @@ public:
     [[nodiscard]] __device__ int vertex_count() const { return m_vertex_count; }
 
     [[nodiscard]] __device__ const glm::vec3 *normals() const { return m_normals; }
+
+    [[nodiscard]] __device__ const glm::vec3 *tangents() const { return m_tangents; }
+
+    [[nodiscard]] __device__ const glm::vec3 *bitangents() const { return m_bitangents; }
 
     [[nodiscard]] __device__ const glm::vec2 *texture_coordinates() const { return m_tex_coords; }
 
@@ -59,6 +65,8 @@ private:
     glm::vec3 *m_vertices{};
     int m_vertex_count; // TODO is count needed on anything other than face count?
     glm::vec3 *m_normals{};
+    glm::vec3 *m_tangents;
+    glm::vec3 *m_bitangents;
     glm::vec2 *m_tex_coords{};
     int m_tex_coord_count;
 
