@@ -1,19 +1,25 @@
 #include "device_texture.cuh"
+#include <algorithm>
 
 DeviceTexture::DeviceTexture(const std::vector<uint8_t> &pixels, size_t width, size_t height)
         : m_data(nullptr), m_width(width), m_height(height) {
-    cudaMalloc(&m_data, sizeof(uint8_t) * pixels.size());
-    cudaMemcpy(m_data, pixels.data(), sizeof(uint8_t) * pixels.size(), cudaMemcpyHostToDevice);
+
+    std::vector<float> float_pixels;
+    float_pixels.reserve(pixels.size());
+    std::transform(std::begin(pixels), std::end(pixels), std::back_inserter(float_pixels), [](uint8_t value) -> float { return static_cast<float>(value) / 255.0f; });
+
+    cudaMalloc(&m_data, sizeof(float) * float_pixels.size());
+    cudaMemcpy(m_data, float_pixels.data(), sizeof(float) * float_pixels.size(), cudaMemcpyHostToDevice);
 }
 
-__device__ glm::vec3 get_color_at(uint8_t *data, int x, int y, size_t width, size_t height) {
+__device__ glm::vec3 get_color_at(float *data, int x, int y, size_t width, size_t height) {
     x = x % width;
     y = y % height;
     auto index = (y * width * 3) + (x * 3);
     return {
-            data[index] / 255.0f,
-            data[index + 1] / 255.0f,
-            data[index + 2] / 255.0f, // TODO: Change texture storage to floats to avoid dividing by 255 at render time?
+            data[index],
+            data[index + 1],
+            data[index + 2], // TODO: Change texture storage to floats to avoid dividing by 255 at render time?
     };
 }
 

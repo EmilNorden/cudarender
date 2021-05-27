@@ -15,7 +15,7 @@ public:
 
 
 private:
-    uint8_t *m_data;
+    float *m_data;
     size_t m_width;
     size_t m_height;
 };
