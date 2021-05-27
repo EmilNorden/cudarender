@@ -96,7 +96,6 @@ __device__ glm::vec3 trace_ray(const WorldSpaceRay &ray, Scene *scene, RandomGen
     Intersection intersection;
     SceneEntity *entity = nullptr;
     if (scene->intersect(ray, intersection, &entity)) {
-
         auto intersection_coordinate = ray.origin() + (ray.direction() * intersection.distance);
         auto &material = entity->mesh()->material();
         float w = 1.0f - intersection.u - intersection.v;
@@ -115,7 +114,7 @@ __device__ glm::vec3 trace_ray(const WorldSpaceRay &ray, Scene *scene, RandomGen
 
         // return object_space_normal;
 
-        if(material.has_normal_map()) {
+        if (material.has_normal_map()) {
             auto t0 = entity->mesh()->tangents()[intersection.i0];
             auto t1 = entity->mesh()->tangents()[intersection.i1];
             auto t2 = entity->mesh()->tangents()[intersection.i2];
@@ -127,18 +126,16 @@ __device__ glm::vec3 trace_ray(const WorldSpaceRay &ray, Scene *scene, RandomGen
             auto object_space_bitangent = glm::normalize(b0 * w + b1 * intersection.u + b2 * intersection.v);
 
             auto sampled_normal = material.sample_normal(texture_uv);
-
-            object_space_normal = glm::normalize(geom::get_object_space_normal_from_normal_map(object_space_normal, sampled_normal, object_space_tangent, object_space_bitangent));
+            // return sampled_normal;
+            object_space_normal = glm::normalize(
+                    geom::get_object_space_normal_from_normal_map(object_space_normal, sampled_normal,
+                                                                  object_space_tangent, object_space_bitangent));
         }
-        /*else {
-            return glm::vec3(0, 1, 0);
-        }*/
 
         auto world_space_normal = entity->world().transform_normal(object_space_normal);
 
         // return world_space_normal;
 
-        // return world_space_normal;
         glm::vec3 reflected_color{};
         if (material.reflectivity() > 0.0f) {
             auto reflected_direction = glm::reflect(ray.direction(), world_space_normal);
@@ -152,25 +149,28 @@ __device__ glm::vec3 trace_ray(const WorldSpaceRay &ray, Scene *scene, RandomGen
         }
 
 
-
         auto diffuse_color = entity->mesh()->material().sample_diffuse(
                 texture_uv); // glm::vec3(0.0f, 1.0f, 0.0f);
 
         auto light = scene->get_random_emissive_entity(random);
+        if(light == entity) {
+            return material.emission(); // We cant contribute to ourselves. Just return emission
+        }
 
         auto surface = light->get_random_emissive_surface(random);
 
-        auto shadow_ray = WorldSpaceRay {
-                intersection_coordinate,
+        auto shadow_ray = WorldSpaceRay{
+                intersection_coordinate + (world_space_normal * 0.1f),
                 glm::normalize(surface.world_coordinate - intersection_coordinate)
         };
 
         glm::vec3 incoming_light{};
         Intersection shadow_intersection;
         SceneEntity *shadow_entity;
-        if(scene->intersect(shadow_ray, shadow_intersection, &shadow_entity)) {
-            if(shadow_entity == light) {
-                incoming_light = glm::dot(world_space_normal, shadow_ray.direction()) * shadow_entity->mesh()->material().emission();
+        if (scene->intersect(shadow_ray, shadow_intersection, &shadow_entity)) {
+            if (shadow_entity == light) {
+                incoming_light = glm::dot(world_space_normal, shadow_ray.direction()) *
+                                 shadow_entity->mesh()->material().emission();
             }
         }
 
@@ -196,15 +196,15 @@ cudaRender(float *g_odata, Camera *camera, Scene *scene, RandomGeneratorPool *ra
     auto threads_per_block = bw * bh;
     auto thread_num_in_block = tx + bw * ty;
     auto block_num_in_grid = blockIdx.x + gridDim.x * blockIdx.y;
-
-    // auto global_thread_id = block_num_in_grid * threads_per_block + thread_num_in_block;
-    auto global_block_id = block_num_in_grid;
-    auto random = random_pool->get_generator(global_block_id);
+    auto global_thread_id = block_num_in_grid * threads_per_block + thread_num_in_block;
+    // auto global_block_id = block_num_in_grid;
+    auto random = random_pool->get_generator(global_thread_id);
 
     if (x < width && y < height) {
         auto ray = camera->cast_perturbed_ray(x, y, random);
         auto color = trace_ray(ray, scene, random, 3);
 
+        color = glm::clamp(color, {0, 0, 0}, {1, 1, 1});
 
         glm::vec3 previous_color;
         auto pixel_index = y * (width * 4) + (x * 4);

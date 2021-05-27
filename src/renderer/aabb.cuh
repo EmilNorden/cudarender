@@ -3,6 +3,8 @@
 
 #include <glm/glm.hpp>
 #include <vector>
+#include <string>
+#include <iostream>
 
 class AABB {
 public:
@@ -27,6 +29,11 @@ public:
 
     __host__ __device__ const glm::vec3& min() const { return m_min; }
     __host__ __device__ const glm::vec3& max() const { return m_max; }
+
+    friend std::ostream &operator<<(std::ostream &os, const AABB &bounds) {
+        return os << "[" << bounds.min().x << ", " << bounds.min().y << ", " << bounds.min().z << "] - [" << bounds.max().x << ", " << bounds.max().y << ", " << bounds.max().z << "]";
+    }
+
     
 private:
     glm::vec3 m_min;

@@ -14,11 +14,7 @@
 
 class Scene {
 public:
-    void build(std::vector<IndexedDeviceMesh *> meshes, std::vector<SceneEntity> entities) {
-        cudaMallocManaged(&m_meshes, sizeof(IndexedDeviceMesh *) * meshes.size());
-        cudaMemcpy(m_meshes, meshes.data(), sizeof(IndexedDeviceMesh *) * meshes.size(), cudaMemcpyHostToDevice);
-        m_mesh_count = meshes.size();
-
+    void build( std::vector<SceneEntity> entities) {
         cudaMallocManaged(&m_entities, sizeof(SceneEntity) * entities.size());
         cudaMemcpy(m_entities, entities.data(), sizeof(SceneEntity) * entities.size(), cudaMemcpyHostToDevice);
         m_entity_count = entities.size();
@@ -105,9 +101,6 @@ public:
     }
 
 private:
-    IndexedDeviceMesh **m_meshes;
-    int m_mesh_count;
-
     SceneEntity *m_entities;
     size_t m_entity_count;
 

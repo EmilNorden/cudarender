@@ -14,7 +14,7 @@ namespace geom {
                         object_space_normal.x, object_space_normal.y,
                         object_space_normal.z};
 
-        return tbn * (sampled_normal * 2.0f) - glm::vec3{1, 1, 1};
+        return tbn * ((sampled_normal * 2.0f) - glm::vec3{1, 1, 1});
     }
 
 }

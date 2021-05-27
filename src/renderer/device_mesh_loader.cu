@@ -1,6 +1,7 @@
 #include "device_mesh_loader.cuh"
 
 #include "device_texture_loader.cuh"
+#include "cuda_utils.cuh"
 
 #include <filesystem>
 #include <glm/glm.hpp>
@@ -66,7 +67,7 @@ __host__ IndexedDeviceMesh* load_single_mesh(aiMesh* mesh, const vector<DeviceMa
     for (size_t i = 0; i < mesh->mNumVertices; ++i) {
         aiVector3D& vertex = mesh->mVertices[i];
 
-        vertices.push_back(glm::vec3(vertex.x, vertex.y, vertex.z) * 0.004f);
+        vertices.emplace_back(vertex.x, vertex.y, vertex.z);
 
         aiVector3D& normal = mesh->mNormals[i];
         normals.emplace_back(normal.x, normal.y, normal.z);
@@ -122,8 +123,11 @@ __host__ IndexedDeviceMesh* load_single_mesh(aiMesh* mesh, const vector<DeviceMa
 
     // TODO: An idea for later. Perhaps I can allocate space for all meshes at once, and return a single pointer to all instead of a vector of pointers
     IndexedDeviceMesh *device_mesh;
-    cudaMallocManaged(&device_mesh, sizeof(IndexedDeviceMesh));
-    return new(device_mesh) IndexedDeviceMesh{vertices, normals, tangents, bitangents, faces_from_indices(indices), texture_coords, material};
+    cuda_assert(cudaMallocManaged(&device_mesh, sizeof(IndexedDeviceMesh)));
+    new(device_mesh) IndexedDeviceMesh{vertices, normals, tangents, bitangents, faces_from_indices(indices), texture_coords, material};
+
+    cout << "    Bounds: " << device_mesh->bounds();
+    return device_mesh;
 }
 
 __host__ DeviceMaterial load_single_material(aiMaterial *material, const filesystem::path& model_directory) {

@@ -1,5 +1,6 @@
 #include "device_texture.cuh"
 #include <algorithm>
+#include "cuda_utils.cuh"
 
 DeviceTexture::DeviceTexture(const std::vector<uint8_t> &pixels, size_t width, size_t height)
         : m_data(nullptr), m_width(width), m_height(height) {
@@ -8,8 +9,7 @@ DeviceTexture::DeviceTexture(const std::vector<uint8_t> &pixels, size_t width, s
     float_pixels.reserve(pixels.size());
     std::transform(std::begin(pixels), std::end(pixels), std::back_inserter(float_pixels), [](uint8_t value) -> float { return static_cast<float>(value) / 255.0f; });
 
-    cudaMalloc(&m_data, sizeof(float) * float_pixels.size());
-    cudaMemcpy(m_data, float_pixels.data(), sizeof(float) * float_pixels.size(), cudaMemcpyHostToDevice);
+    transfer_vector_to_device_memory(float_pixels, &m_data);
 }
 
 __device__ glm::vec3 get_color_at(float *data, int x, int y, size_t width, size_t height) {

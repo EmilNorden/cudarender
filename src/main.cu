@@ -93,38 +93,8 @@ static const char *glsl_drawtex_fragshader_src =
         "   	vec4 c = texture(tex, ourTexCoord);\n"
         "   	color = c;\n"
         "}\n";
-void keyboard_func(GLFWwindow* window, int key, int scancode, int action, int mods) {}
-/*
-Camera *camera;
-Scene * scene;
 
-void keyboard_func(GLFWwindow* window, int key, int scancode, int action, int mods){
-    auto speed = 0.1f;
-    if(key == GLFW_KEY_W) {
-        camera->set_position(camera->position() + camera->direction() * speed);
-    }
-    else if(key == GLFW_KEY_S) {
-        camera->set_position(camera->position() - camera->direction() * speed);
-    }
-    else if(key == GLFW_KEY_D) {
-        auto right = glm::cross(camera->up(), camera->direction());
-        camera->set_position(camera->position() + right * speed);
-    }
-    else if(key == GLFW_KEY_A) {
-        auto right = glm::cross(camera->up(), camera->direction());
-        camera->set_position(camera->position() - right * speed);
-    }
-    else if(key == GLFW_KEY_Z) {
-        camera->set_position(camera->position() + camera->up() * speed);
-    }
-    else if(key == GLFW_KEY_X) {
-        camera->set_position(camera->position()  camera->up() * speed);
-    }
-    else if(key == GLFW_KEY_SPACE) {
-        device_autofocus(camera,scene, WIDTH, HEIGHT);
-    }
-}
-*/
+void keyboard_func(GLFWwindow *window, int key, int scancode, int action, int mods) {}
 
 void check_for_gl_errors() {
     while (true) {
@@ -239,47 +209,49 @@ T *create_device_type(Args &&... args) {
     return new(object) T(std::forward<Args>(args)...);
 }
 
-void handle_input(GLFWwindow* window, Camera* camera, Scene *scene) {
+void handle_input(GLFWwindow *window, Camera *camera, Scene *scene) {
 
-    auto speed = 0.1f;
-    if(glfwGetKey(window, GLFW_KEY_W)) {
+    auto speed = 3.0f;
+    if (glfwGetKey(window, GLFW_KEY_W)) {
         camera->set_position(camera->position() + camera->direction() * speed);
     }
-    if(glfwGetKey(window, GLFW_KEY_S)) {
+    if (glfwGetKey(window, GLFW_KEY_S)) {
         camera->set_position(camera->position() - camera->direction() * speed);
     }
-    if(glfwGetKey(window, GLFW_KEY_D)) {
+    if (glfwGetKey(window, GLFW_KEY_D)) {
         auto right = glm::cross(camera->up(), camera->direction());
         camera->set_position(camera->position() + right * speed);
     }
-    if(glfwGetKey(window, GLFW_KEY_A)) {
+    if (glfwGetKey(window, GLFW_KEY_A)) {
         auto right = glm::cross(camera->up(), camera->direction());
         camera->set_position(camera->position() - right * speed);
     }
-    if(glfwGetKey(window, GLFW_KEY_Z)) {
+    if (glfwGetKey(window, GLFW_KEY_Z)) {
         camera->set_position(camera->position() + camera->up() * speed);
     }
-    if(glfwGetKey(window, GLFW_KEY_X)) {
+    if (glfwGetKey(window, GLFW_KEY_X)) {
         camera->set_position(camera->position() - camera->up() * speed);
     }
-     if(glfwGetKey(window, GLFW_KEY_SPACE)) {
-        device_autofocus(camera,scene, WIDTH, HEIGHT);
+    if (glfwGetKey(window, GLFW_KEY_SPACE)) {
+        device_autofocus(camera, scene, WIDTH, HEIGHT);
     }
 }
 
 double cursor_x;
 double cursor_y;
 bool mouselook_active = false;
-void mouse_button_callback(GLFWwindow* window, int button, int action, int mods) {
+bool needs_autofocus = false;
+
+void mouse_button_callback(GLFWwindow *window, int button, int action, int mods) {
     if (button == GLFW_MOUSE_BUTTON_LEFT) {
-        if(action == GLFW_PRESS) {
+        if (action == GLFW_PRESS) {
             glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
             glfwGetCursorPos(window, &cursor_x, &cursor_y);
             mouselook_active = true;
-        }
-        else if(action == GLFW_RELEASE) {
+        } else if (action == GLFW_RELEASE) {
             glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
             mouselook_active = false;
+            needs_autofocus = true;
         }
     }
 }
@@ -290,15 +262,15 @@ let forward = glm::normalize(inverted[2]);
 glm::vec3(forward.x, forward.y, forward.z)
 }*/
 
-glm::vec3 get_forward(const glm::mat4x4& mat) {
-   auto inverted = glm::inverse(mat);
-   auto forward = glm::normalize(inverted[2]);
-   return glm::vec3(forward);
+glm::vec3 get_forward(const glm::mat4x4 &mat) {
+    auto inverted = glm::inverse(mat);
+    auto forward = glm::normalize(inverted[2]);
+    return glm::vec3(forward);
 }
 
 void set_camera_direction(Camera *camera, float yaw, float pitch) {
     auto xz_rotation = glm::rotate(yaw, glm::vec3(0, 1, 0));
-    auto right_vector =glm::cross(get_forward(xz_rotation), glm::vec3(0, 1, 0));
+    auto right_vector = glm::cross(get_forward(xz_rotation), glm::vec3(0, 1, 0));
     auto final_rotation = glm::rotate(xz_rotation, pitch, right_vector);
     camera->set_direction(get_forward(final_rotation));
 }
@@ -318,13 +290,13 @@ int main() {
 
     float rot = 1.45f;
     //auto camera_position = glm::vec3(glm::cos(rot) * 10.0, 0.0000, glm::sin(rot) * 10.0f);
-    auto camera_position = glm::vec3(0.0, -1.5, 0.5f);
+    auto camera_position = glm::vec3(90.0, 100.0, 200.0);
     auto camera_direction = glm::normalize(glm::vec3(0.0, 0.0, -60.0f) - camera_position);
     camera->set_position(camera_position);
     camera->set_direction(camera_direction);
     camera->set_up(glm::vec3(0.0, 1.0, 0.0));
     camera->set_field_of_view(75.0 * (3.1415 / 180.0));
-    camera->set_blur_radius(0.03); // (0.03);
+    camera->set_blur_radius(0.3); // (0.03);
     camera->set_focal_length(60.0);
     camera->set_shutter_speed(0.0);
     camera->set_resolution(glm::vec2(WIDTH, HEIGHT));
@@ -341,103 +313,136 @@ int main() {
 
     cudaDeviceSetLimit(cudaLimitStackSize, 2048);
 
-    auto grass = DeviceTextureLoader {}.load("/home/emil/textures/Metal004_4K-JPG/color.jpg");
-    auto normal_map = DeviceTextureLoader {}.load("/home/emil/textures/Metal004_4K-JPG/normal.jpg");
-    auto material = DeviceMaterial{grass};
-    material.set_normal_map(normal_map);
-    material.set_uv_scale(10.0f);
+    glfwPollEvents();
+    auto wall = DeviceTextureLoader{}.load("/home/emil/textures/Bricks059_4K-JPG/color.jpg");
+    auto wall_normal = DeviceTextureLoader{}.load("/home/emil/textures/Bricks059_4K-JPG/normal.jpg");
+    glfwPollEvents();
+    auto wood_diffuse = DeviceTextureLoader{}.load("/home/emil/textures/WoodFloor043_4K-JPG/color.jpg");
+    auto wood_normal = DeviceTextureLoader{}.load("/home/emil/textures/WoodFloor043_4K-JPG/normal.jpg");
 
-    std::vector<glm::vec3> g_verts;
-    g_verts.emplace_back(-20.0f, 0.0f, 20.0f);
-    g_verts.emplace_back(20.0f, 0.0f, 20.0f);
-    g_verts.emplace_back(20.0f, 0.0f, -20.0f);
-    g_verts.emplace_back(-20.0f, 0.0f, -20.0f);
-    g_verts.emplace_back(0.0f, -0.5f, 0.0f); // Dummy vertex
+    auto nvidia_diffuse = DeviceTextureLoader{}.load("/home/emil/textures/nvidia/color.jpg");
 
-    std::vector<glm::vec3> g_normals;
-    g_normals.emplace_back(0.0f, 1.0f, 0.0f);
-    g_normals.emplace_back(0.0f, 1.0f, 0.0f);
-    g_normals.emplace_back(0.0f, 1.0f, 0.0f);
-    g_normals.emplace_back(0.0f, 1.0f, 0.0f);
-
-    std::vector<glm::vec3> g_bitangents;
-    g_bitangents.emplace_back(0.0f, 0.0f, 1.0f);
-    g_bitangents.emplace_back(0.0f, 0.0f, 1.0f);
-    g_bitangents.emplace_back(0.0f, 0.0f, 1.0f);
-    g_bitangents.emplace_back(0.0f, 0.0f, 1.0f);
-
-    std::vector<glm::vec3> g_tangents;
-    g_tangents.emplace_back(1.0f, 0.0f, 0.0f);
-    g_tangents.emplace_back(1.0f, 0.0f, 0.0f);
-    g_tangents.emplace_back(1.0f, 0.0f, 0.0f);
-    g_tangents.emplace_back(1.0f, 0.0f, 0.0f);
-
-    /*g_verts.emplace_back(-1.0f, 0.1f, 1.0f);
-    g_verts.emplace_back(1.0f, 0.1f, 1.0f);
-    g_verts.emplace_back(1.0f, 0.1f, -1.0f);
-    g_verts.emplace_back(-1.0f, 0.1f, -1.0f);*/
-
-    std::vector<TriangleFace> g_faces;
-    g_faces.push_back({0, 1, 2});
-    g_faces.push_back({ 0, 2, 3});
-
-    /*g_faces.push_back({4+0, 4+1, 4+2});
-    g_faces.push_back({ 4+0, 4+2, 4+3});*/
-
-    std::vector<glm::vec2> g_texcoords;
-    g_texcoords.emplace_back(0.0f, 1.0f);
-    g_texcoords.emplace_back(1.0f, 1.0f);
-    g_texcoords.emplace_back(1.0f, 0.0f);
-    g_texcoords.emplace_back(0.0f, 0.0f);
-
-    /*g_texcoords.emplace_back(0.0f, 1.0f);
-    g_texcoords.emplace_back(1.0f, 1.0f);
-    g_texcoords.emplace_back(1.0f, 0.0f);
-    g_texcoords.emplace_back(0.0f, 0.0f);*/
-
-    material.set_reflectivity(0.5f);
-    auto plane = create_device_type<IndexedDeviceMesh>(g_verts, g_normals, g_tangents, g_bitangents, g_faces, g_texcoords, material);
 
     std::vector<SceneEntity> entities;
 
+    auto floor_mesh = mesh_loader.load("/home/emil/models/crate/crate1.obj");
+    floor_mesh[0]->material().set_diffuse_map(wood_diffuse);
+    floor_mesh[0]->material().set_uv_scale(glm::vec2(6.0f, 6.0f));
+    floor_mesh[0]->material().set_reflectivity(0.3f);
+    // floor_mesh[0]->material().set_normal_map(wood_normal);
 
-    entities.emplace_back(
-            plane,
-            WorldTransformBuilder()
-                .with_translation({0.0, -3.3, 0.0})
-                .with_scale({1.0, 1.0, 1.0})
-                .build()
-            );
+    auto wall_mesh = mesh_loader.load("/home/emil/models/crate/crate1.obj");
+    wall_mesh[0]->material().set_diffuse_map(wall);
+    wall_mesh[0]->material().set_uv_scale(glm::vec2(4.0f, 4.0f));
+    //wall_mesh[0]->material().set_normal_map(wall_normal);
 
     auto crate = mesh_loader.load("/home/emil/models/crate/crate1.obj");
-    crate[0]->material().set_emission(glm::vec3(1.0, 1.0, 1.0));
-    //crate[0]->material().set_reflectivity(0.6f);
+    crate[0]->material().set_diffuse_map(nvidia_diffuse);
+    crate[0]->material().set_uv_scale(glm::vec2(-1.0f, 1.0f));
+    entities.emplace_back(
+            crate[0],
+            WorldTransformBuilder()
+                    .with_translation({-200, 10, 200})
+                    .with_uniform_scale(1.5f)
+                    .build()
+    );
 
-    auto house = mesh_loader.load("/home/emil/models/house1/black_smith.obj"); // 0.5 0.35 0.5
+    auto light_mesh = mesh_loader.load("/home/emil/models/crate/crate1.obj");
+    light_mesh[0]->material().set_emission(glm::vec3(1.0, 1.0, 1.0));
 
-    for(int i = 0; i < 1; ++i) {
-        entities.emplace_back(house[0],
-                              WorldTransformBuilder()
-                                      .with_translation({0.0, 0.0, i * -12.0})
-                                      .with_rotation({0, 1.57, 0})
-                                      .with_uniform_scale(1000.0f)
-                                      .build());
-    }
+    auto dragon = mesh_loader.load("/home/emil/models/stanford_dragon/dragon.obj");
+    dragon[0]->material().set_diffuse_map(wall);
+    dragon[0]->material().set_reflectivity(1.0f);
 
-    entities.emplace_back(crate[0],
+    entities.emplace_back(
+            dragon[0],
+            WorldTransformBuilder()
+                    .with_uniform_scale(20.0f)
+                    .build()
+    );
+
+    // Ceiling Light
+    /*entities.emplace_back(light_mesh[0],
                           WorldTransformBuilder()
-                          .with_translation({0.5, -1.0, 0.0})
-                          .with_uniform_scale(2.0f)
-                          .build());
+                                  .with_translation({0.0, 960.0, 0.0})
+                                  .with_scale({10.0, 0.1, 10.0})
+                                  .build());*/
+
+    entities.emplace_back(light_mesh[0],
+                          WorldTransformBuilder()
+                                  .with_translation({200.0, 300.0, 0.0})
+                                  .with_scale({1.0, 1.0, 1.0})
+                                  .build());
+
+
+    // Mesh size is 96x96x96 cm, scaled to 960x9.6x960cm
+    // Floor
+    entities.emplace_back(
+            floor_mesh[0],
+            WorldTransformBuilder()
+                    .with_translation({0.0, 0.0, 0.0})
+                    .with_scale({10.0, 0.1, 10.0})
+                    .build()
+    );
+
+    // Ceiling
+    entities.emplace_back(
+            wall_mesh[0],
+            WorldTransformBuilder()
+                    .with_translation({0.0, 960.0, 0.0})
+                    .with_scale({10.0, 0.1, 10.0})
+                    .build()
+    );
+
+    // Front wall
+    entities.emplace_back(
+            wall_mesh[0],
+            WorldTransformBuilder()
+                    .with_translation({0.0, 480.0, 480.0})
+                    .with_rotation({glm::pi<float>() / 2.0f, 0.0, 0.0})
+                    .with_scale({10.0, 0.1, 10.0})
+                    .build()
+    );
+
+    // Back wall
+    entities.emplace_back(
+            wall_mesh[0],
+            WorldTransformBuilder()
+                    .with_translation({0.0, 480.0, -480.0})
+                    .with_rotation({glm::pi<float>() / 2.0f, 0.0, -glm::pi<float>() / 2.0f})
+                    .with_scale({10.0, 0.1, 10.0})
+                    .build()
+    );
+
+    // Left wall
+    entities.emplace_back(
+            wall_mesh[0],
+            WorldTransformBuilder()
+                    .with_translation({-480.0, 480.0, 0.0})
+                    .with_rotation({0.0f, -glm::pi<float>() / 2.0f, glm::pi<float>() / 2.0f})
+                    .with_scale({10.0, 0.1, 10.0})
+                    .build()
+    );
+
+    // Right wall
+    entities.emplace_back(
+            wall_mesh[0],
+            WorldTransformBuilder()
+                    .with_translation({480.0, 480.0, 0.0})
+                    .with_rotation({0.0, glm::pi<float>() / 2.0f, -glm::pi<float>() / 2.0f})
+                    .with_scale({10.0, 0.1, 10.0})
+                    .build()
+    );
 
 
     Scene *scene;
     cudaMallocManaged(&scene, sizeof(Scene));
     new(scene) Scene;
-    scene->build(house, entities);
+    scene->build(entities);
 
-    auto random = create_device_type<RandomGeneratorPool>(2048, 123);
-
+    std::cout << "Creating random states..." << std::flush;
+    auto random = create_device_type<RandomGeneratorPool>(2048 * 512, 123);
+    std::cout << "Done." << std::endl;
     double rotation = 0.0;
     double total_duration = 0.0f;
     double max_duration = 0.0f;
@@ -450,19 +455,28 @@ int main() {
 
     auto run = true;
 
-    float yaw = 3.14f + 0.2f;
-    float pitch = 0.25f;
+    float yaw = 2.31;
+    float pitch = 0.015f;
 
     set_camera_direction(camera, yaw, pitch);
     device_autofocus(camera, scene, WIDTH, HEIGHT);
     while (run && !window.should_close()) {
         handle_input(window.handle(), camera, scene);
 
-        if(glfwGetKey(window.handle(), GLFW_KEY_ESCAPE)){
+        if (glfwGetKey(window.handle(), GLFW_KEY_ESCAPE)) {
             run = false;
         }
 
-        if(mouselook_active) {
+        if (glfwGetKey(window.handle(), GLFW_KEY_P)) {
+            dragon[0]->material().set_reflectivity(0.0f);
+            floor_mesh[0]->material().set_reflectivity(0.0f);
+        }
+        if (glfwGetKey(window.handle(), GLFW_KEY_O)) {
+            dragon[0]->material().set_reflectivity(1.0f);
+            floor_mesh[0]->material().set_reflectivity(0.3f);
+        }
+
+        if (mouselook_active) {
             set_camera_direction(camera, yaw, pitch);
 
             double current_cursor_x, current_cursor_y;
@@ -479,7 +493,12 @@ int main() {
             cursor_y = current_cursor_y;
         }
 
-        if(camera->needs_update()) {
+        if(needs_autofocus) {
+            needs_autofocus = false;
+            device_autofocus(camera, scene, WIDTH, HEIGHT);
+        }
+
+        if (camera->needs_update()) {
             camera->update();
             sample = 0;
         }
@@ -495,8 +514,9 @@ int main() {
         }
         total_duration += frame_duration.count();
         std::cout << '\r' << "Frame time: " << frame_duration.count() << "ms\t\t Avg (10 frames): "
-                  << (total_duration / frame_counter) << "ms\t\t Max: " << max_duration << "ms\tt Sample: "
-                  << sample << "                    "
+                  << (total_duration / frame_counter) << "ms\t\t Max: " << max_duration << "ms\tt Sample: " << sample
+                  // << "\t\tCamera: " << camera->position().x << ", " << camera->position().y << ", " << camera->position().z << ", yaw " << yaw << " pitch " << pitch
+                  << "                    "
                   << std::flush;
 
         if (frame_counter == 10) {

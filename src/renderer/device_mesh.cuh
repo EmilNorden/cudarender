@@ -12,6 +12,7 @@
 
 // Forward declarations
 struct TreeNode;
+
 class RandomGenerator;
 
 struct TriangleFace {
@@ -41,6 +42,8 @@ public:
     [[nodiscard]] __device__ const glm::vec2 *texture_coordinates() const { return m_tex_coords; }
 
     [[nodiscard]] __device__ __host__ DeviceMaterial &material() { return m_material; }
+
+    [[nodiscard]] __host__ const AABB &bounds() { return m_bounds; }
 
     [[nodiscard]] __device__ TriangleFace get_random_face(RandomGenerator &random);
 

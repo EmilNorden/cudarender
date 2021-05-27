@@ -1,16 +1,11 @@
 #include "device_mesh.cuh"
 #include "device_stack.cuh" // For kd tree traversal
 #include "device_random.cuh"
+#include "cuda_utils.cuh"
 
 using namespace std;
 
 #define STACK_SIZE      20
-
-template<typename T>
-struct Tuple {
-    T item1;
-    T item2;
-};
 
 struct TreeNode {
     Axis splitting_axis;
@@ -37,14 +32,6 @@ struct NodeSearchData {
     }
 };
 
-__device__ bool
-intersect_node(TreeNode *node, const ObjectSpaceRay &ray, float &tmin, float &tmax,
-               DeviceStack<STACK_SIZE, NodeSearchData> &nodes);
-
-__device__ bool
-intersect_leaf(TreeNode *node, const ObjectSpaceRay &ray, float &tmin, float &tmax,
-               DeviceStack<STACK_SIZE, NodeSearchData> &nodes);
-
 #define EPSILON 9.99999997475243E-07
 
 
@@ -58,8 +45,8 @@ __device__ bool hit_aabb(const ObjectSpaceRay &ray, const AABB &aabb, float &out
             }
         }
          */
-        auto t1 = (aabb.min()[i] - ray.origin()[i]) / ray.direction()[i];// / self.direction[i];
-        auto t2 = (aabb.max()[i] - ray.origin()[i]) / ray.direction()[i]; // / self.direction[i];
+        auto t1 = (aabb.min()[i] - ray.origin()[i]) * ray.inverse_direction()[i];// / self.direction[i];
+        auto t2 = (aabb.max()[i] - ray.origin()[i]) * ray.inverse_direction()[i]; // / self.direction[i];
 
         if (t1 > t2) {
             auto temp = t1;
@@ -100,7 +87,7 @@ hit_triangle(const ObjectSpaceRay &ray, glm::vec3 v1, glm::vec3 v2, glm::vec3 v3
 
     // BACK-FACE CULLING
 
-    /*if (inside_geometry && det > EPSILON) {
+    /*if (det < 0.00000001f) {
         return false;
     }*/
     /*if (!inside_geometry && det < EPSILON) {
@@ -141,12 +128,7 @@ hit_triangle(const ObjectSpaceRay &ray, glm::vec3 v1, glm::vec3 v2, glm::vec3 v3
     return false;
 }
 
-template <typename T>
-void transfer_vector_to_device_memory(const std::vector<T>& items, T** device_memory)
-{
-    cudaMalloc(device_memory, sizeof(T) * items.size());
-    cudaMemcpy(*device_memory, items.data(), sizeof(T) * items.size(), cudaMemcpyHostToDevice);
-}
+
 
 __host__ IndexedDeviceMesh::IndexedDeviceMesh(const std::vector<glm::vec3> &vertices,
                                               const std::vector<glm::vec3> &normals,
@@ -157,24 +139,24 @@ __host__ IndexedDeviceMesh::IndexedDeviceMesh(const std::vector<glm::vec3> &vert
                                               const DeviceMaterial &material)
         : m_bounds(vertices), m_material(material) {
 
-    cudaMallocManaged(&m_vertices, sizeof(glm::vec3) * vertices.size());
-    cudaMemcpy(m_vertices, vertices.data(), sizeof(glm::vec3) * vertices.size(), cudaMemcpyHostToDevice);
+    cuda_assert(cudaMallocManaged(&m_vertices, sizeof(glm::vec3) * vertices.size()));
+    cuda_assert(cudaMemcpy(m_vertices, vertices.data(), sizeof(glm::vec3) * vertices.size(), cudaMemcpyHostToDevice));
 
     transfer_vector_to_device_memory(normals, &m_normals);
     transfer_vector_to_device_memory(tangents, &m_tangents);
     transfer_vector_to_device_memory(bitangents, &m_bitangents);
     transfer_vector_to_device_memory(tex_coords, &m_tex_coords);
 
-    cudaMallocManaged(&m_root, sizeof(TreeNode));
+    cuda_assert(cudaMallocManaged(&m_root, sizeof(TreeNode)));
     auto faces_copy = faces;
     build_node(*m_root, faces_copy, Axis::X);
 }
 
 void IndexedDeviceMesh::build_node(TreeNode &node, std::vector<TriangleFace> &faces, Axis current_axis) {
 
-    if (faces.size() < 250) {
-        cudaMalloc(&node.faces, sizeof(TriangleFace) * faces.size());
-        cudaMemcpy(node.faces, faces.data(), sizeof(TriangleFace) * faces.size(), cudaMemcpyHostToDevice);
+    if (faces.size() < 25) {
+        cuda_assert(cudaMalloc(&node.faces, sizeof(TriangleFace) * faces.size()));
+        cuda_assert(cudaMemcpy(node.faces, faces.data(), sizeof(TriangleFace) * faces.size(), cudaMemcpyHostToDevice));
         node.face_count = faces.size();
         node.left = nullptr;
         node.right = nullptr;
@@ -231,8 +213,8 @@ void IndexedDeviceMesh::build_node(TreeNode &node, std::vector<TriangleFace> &fa
     node.splitting_value = splitting_value;
     node.faces = nullptr;
     node.face_count = 0;
-    cudaMallocManaged(&node.left, sizeof(TreeNode));
-    cudaMallocManaged(&node.right, sizeof(TreeNode));
+    cuda_assert(cudaMallocManaged(&node.left, sizeof(TreeNode)));
+    cuda_assert(cudaMallocManaged(&node.right, sizeof(TreeNode)));
     build_node(*node.left, left_side, static_cast<Axis>((current_axis + 1) % 3));
     build_node(*node.right, right_side, static_cast<Axis>((current_axis + 1) % 3));
 }
@@ -332,7 +314,7 @@ IndexedDeviceMesh::intersect(const ObjectSpaceRay &ray, Intersection &intersecti
             }
         } else {
             auto a = (int) node->splitting_axis;
-            auto thit = (node->splitting_value - ray.origin()[a]) / ray.direction()[a];
+            auto thit = (node->splitting_value - ray.origin()[a]) * ray.inverse_direction()[a];
 
             switch (CompareRangeWithPlane(ray, tmin, tmax, node)) {
                 case RangePlaneComparison::AbovePlane:
