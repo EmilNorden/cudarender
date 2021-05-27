@@ -20,13 +20,6 @@ struct TriangleFace {
     int i2;
 };
 
-struct Triangle {
-    glm::vec3 v0;
-    glm::vec3 v1;
-    glm::vec3 v2;
-};
-
-
 class IndexedDeviceMesh {
 public:
     __host__ IndexedDeviceMesh(const std::vector<glm::vec3> &vertices,
@@ -39,8 +32,6 @@ public:
 
     [[nodiscard]] __device__ const glm::vec3 *vertices() const { return m_vertices; }
 
-    [[nodiscard]] __device__ int vertex_count() const { return m_vertex_count; }
-
     [[nodiscard]] __device__ const glm::vec3 *normals() const { return m_normals; }
 
     [[nodiscard]] __device__ const glm::vec3 *tangents() const { return m_tangents; }
@@ -48,8 +39,6 @@ public:
     [[nodiscard]] __device__ const glm::vec3 *bitangents() const { return m_bitangents; }
 
     [[nodiscard]] __device__ const glm::vec2 *texture_coordinates() const { return m_tex_coords; }
-
-    [[nodiscard]] __device__ int texture_coordinate_count() const { return m_tex_coord_count; }
 
     [[nodiscard]] __device__ __host__ DeviceMaterial &material() { return m_material; }
 
@@ -63,12 +52,10 @@ private:
     TreeNode *m_root{};
 
     glm::vec3 *m_vertices{};
-    int m_vertex_count; // TODO is count needed on anything other than face count?
     glm::vec3 *m_normals{};
     glm::vec3 *m_tangents;
     glm::vec3 *m_bitangents;
     glm::vec2 *m_tex_coords{};
-    int m_tex_coord_count;
 
     void build_node(TreeNode &node, std::vector<TriangleFace> &faces, Axis current_axis);
 };

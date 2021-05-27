@@ -157,45 +157,17 @@ __host__ IndexedDeviceMesh::IndexedDeviceMesh(const std::vector<glm::vec3> &vert
                                               const DeviceMaterial &material)
         : m_bounds(vertices), m_material(material) {
 
-    // cudaMalloc(&m_vertices, sizeof(glm::vec3) * vertices.size());
     cudaMallocManaged(&m_vertices, sizeof(glm::vec3) * vertices.size());
     cudaMemcpy(m_vertices, vertices.data(), sizeof(glm::vec3) * vertices.size(), cudaMemcpyHostToDevice);
-    m_vertex_count = vertices.size();
 
-    cudaMalloc(&m_normals, sizeof(glm::vec3) * normals.size());
-    cudaMemcpy(m_normals, normals.data(), sizeof(glm::vec3) * normals.size(), cudaMemcpyHostToDevice);
-
-    cudaMalloc(&m_tangents, sizeof(glm::vec3) * tangents.size());
-    cudaMemcpy(m_tangents, tangents.data(), sizeof(glm::vec3) * tangents.size(), cudaMemcpyHostToDevice);
-
-    cudaMalloc(&m_bitangents, sizeof(glm::vec3) * bitangents.size());
-    cudaMemcpy(m_bitangents, bitangents.data(), sizeof(glm::vec3) * bitangents.size(), cudaMemcpyHostToDevice);
-    //transfer_vector_to_device_memory(tangents, &m_tangents);
-    // transfer_vector_to_device_memory(bitangents, &m_bitangents);
-
-    // cudaMalloc(&m_faces, sizeof(TriangleFace) * faces.size());
-
-    cudaMalloc(&m_tex_coords, sizeof(glm::vec2) * tex_coords.size());
-    cudaMemcpy(m_tex_coords, tex_coords.data(), sizeof(glm::vec2) * tex_coords.size(), cudaMemcpyHostToDevice);
-    m_tex_coord_count = tex_coords.size();
-
+    transfer_vector_to_device_memory(normals, &m_normals);
+    transfer_vector_to_device_memory(tangents, &m_tangents);
+    transfer_vector_to_device_memory(bitangents, &m_bitangents);
+    transfer_vector_to_device_memory(tex_coords, &m_tex_coords);
 
     cudaMallocManaged(&m_root, sizeof(TreeNode));
     auto faces_copy = faces;
     build_node(*m_root, faces_copy, Axis::X);
-}
-
-bool is_sorted(glm::vec3 *verts, std::vector<TriangleFace> &faces) {
-    for (auto i = 0; i < faces.size() - 1; ++i) {
-        auto current_face = faces[i];
-        auto next_face = faces[i + 1];
-
-        if (verts[current_face.i0].x > verts[next_face.i0].x) {
-            return false;
-        }
-    }
-
-    return true;
 }
 
 void IndexedDeviceMesh::build_node(TreeNode &node, std::vector<TriangleFace> &faces, Axis current_axis) {
@@ -299,35 +271,6 @@ intersects_mesh(const ObjectSpaceRay &ray, TreeNode *node, glm::vec3 *vertices, 
     }
 
     return success;
-}
-
-__device__ Tuple<TreeNode *> order_subnodes(const ObjectSpaceRay &ray, TreeNode *node, float tmin, float tmax) {
-    auto axis = static_cast<int>(node->splitting_axis);
-    auto tmin_axis = ray.origin()[axis] + (ray.direction()[axis] * tmin);
-    auto tmax_axis = ray.origin()[axis] + (ray.direction()[axis] * tmax);
-
-    if (tmin_axis < node->splitting_value && tmax_axis < node->splitting_value) {
-        return {
-                node->left,
-                node->right
-        };
-    } else if (tmin_axis >= node->splitting_value && tmax_axis >= node->splitting_value) {
-        return {
-                node->left,
-                node->right
-        };
-    } else if (tmin_axis < node->splitting_value && tmax_axis > node->splitting_value) {
-        return {
-                node->left,
-                node->right
-        };
-    } else {
-        return {
-                node->right,
-                node->left
-        };
-    }
-
 }
 
 enum class RangePlaneComparison {
