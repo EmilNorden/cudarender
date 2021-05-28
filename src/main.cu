@@ -441,7 +441,7 @@ int main() {
     scene->build(entities);
 
     std::cout << "Creating random states..." << std::flush;
-    auto random = create_device_type<RandomGeneratorPool>(2048 * 512, 123);
+    auto random = create_device_type<RandomGeneratorPool>(2048 * 256, 123);
     std::cout << "Done." << std::endl;
     double rotation = 0.0;
     double total_duration = 0.0f;
