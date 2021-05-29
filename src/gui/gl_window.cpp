@@ -42,6 +42,7 @@ GlWindow::GlWindow(const std::string& title, int width, int height, GLFWkeyfun k
     glfwSwapInterval(1);
     glfwSetKeyCallback(m_window, key_callback);
 
+
     GlewHelper::init();
 
     glViewport(0, 0, m_width, m_height);
@@ -84,7 +85,7 @@ bool GlWindow::should_close() {
     return glfwWindowShouldClose(m_window);
 }
 
-void GlWindow::draw() {
+void GlWindow::draw() const {
     glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT);
 

@@ -14,7 +14,7 @@ class GlWindow {
 public:
     GlWindow(const std::string& title, int width, int height, GLFWkeyfun key_callback); // TODO: Fix the key_callback. This is a quick and dirty solution that exposes glfw to the rest of the code.
 
-    void draw();
+    void draw() const;
     void swap();
 
     [[nodiscard]] bool should_close();

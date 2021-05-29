@@ -218,7 +218,7 @@ cudaRender(float *g_odata, Camera *camera, Scene *scene, RandomGeneratorPool *ra
 
 void Renderer::render(Camera *camera, Scene *scene, RandomGeneratorPool *random, int width, int height, size_t sample) {
     dim3 block(16, 16, 1);
-    dim3 grid(width / block.x, std::ceil(height / (float) block.y), 1);
+    dim3 grid(std::ceil(width / (float)block.x), std::ceil(height / (float) block.y), 1);
     cudaRender<<<grid, block, 0>>>((float *) m_cuda_render_buffer, camera, scene, random, width, height, sample);
 
     cudaArray *texture_ptr;
