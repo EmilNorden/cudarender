@@ -316,11 +316,14 @@ int main() {
     glfwPollEvents();
     auto wall = DeviceTextureLoader{}.load("/home/emil/textures/Bricks059_4K-JPG/color.jpg");
     auto wall_normal = DeviceTextureLoader{}.load("/home/emil/textures/Bricks059_4K-JPG/normal.jpg");
+    auto wall_roughness = DeviceTextureLoader{}.load("/home/emil/textures/Bricks059_4K-JPG/Bricks059_4K_Roughness.jpg");
     glfwPollEvents();
     auto wood_diffuse = DeviceTextureLoader{}.load("/home/emil/textures/WoodFloor043_4K-JPG/color.jpg");
     auto wood_normal = DeviceTextureLoader{}.load("/home/emil/textures/WoodFloor043_4K-JPG/normal.jpg");
 
     auto nvidia_diffuse = DeviceTextureLoader{}.load("/home/emil/textures/nvidia/color.jpg");
+
+    auto red_diffuse = DeviceTextureLoader{}.load("/home/emil/textures/Plastic007_4K-JPG/color.jpg");
 
 
     std::vector<SceneEntity> entities;
@@ -333,7 +336,12 @@ int main() {
 
     auto wall_mesh = mesh_loader.load("/home/emil/models/crate/crate1.obj");
     wall_mesh[0]->material().set_diffuse_map(wall);
+    wall_mesh[0]->material().set_roughness_map(wall_roughness);
     wall_mesh[0]->material().set_uv_scale(glm::vec2(4.0f, 4.0f));
+
+    auto wall_mesh2 = mesh_loader.load("/home/emil/models/crate/crate1.obj");
+    wall_mesh2[0]->material().set_diffuse_map(wall);
+    wall_mesh2[0]->material().set_uv_scale(glm::vec2(4.0f, 4.0f));
     //wall_mesh[0]->material().set_normal_map(wall_normal);
 
     auto crate = mesh_loader.load("/home/emil/models/crate/crate1.obj");
@@ -352,14 +360,16 @@ int main() {
 
     auto dragon = mesh_loader.load("/home/emil/models/stanford_dragon/dragon.obj");
     dragon[0]->material().set_diffuse_map(wall);
-    dragon[0]->material().set_reflectivity(1.0f);
+    // dragon[0]->material().set_reflectivity(1.0f);
 
-    entities.emplace_back(
+    // Dragon
+    /*entities.emplace_back(
             dragon[0],
             WorldTransformBuilder()
+            .with_translation({0.0, 0.0, -300})
                     .with_uniform_scale(20.0f)
                     .build()
-    );
+    );*/
 
     // Ceiling Light
     /*entities.emplace_back(light_mesh[0],
@@ -371,7 +381,7 @@ int main() {
     entities.emplace_back(light_mesh[0],
                           WorldTransformBuilder()
                                   .with_translation({200.0, 300.0, 0.0})
-                                  .with_scale({1.0, 1.0, 1.0})
+                                  .with_uniform_scale(1.0)
                                   .build());
 
 
@@ -406,7 +416,7 @@ int main() {
 
     // Back wall
     entities.emplace_back(
-            wall_mesh[0],
+            wall_mesh2[0],
             WorldTransformBuilder()
                     .with_translation({0.0, 480.0, -480.0})
                     .with_rotation({glm::pi<float>() / 2.0f, 0.0, -glm::pi<float>() / 2.0f})
@@ -474,6 +484,11 @@ int main() {
         if (glfwGetKey(window.handle(), GLFW_KEY_O)) {
             dragon[0]->material().set_reflectivity(1.0f);
             floor_mesh[0]->material().set_reflectivity(0.3f);
+        }
+
+        if(glfwGetKey(window.handle(), GLFW_KEY_Y)) {
+            wall_mesh2[0]->material().set_diffuse_map(red_diffuse);
+            sample = 0;
         }
 
         if (mouselook_active) {

@@ -14,7 +14,11 @@ public:
 
     [[nodiscard]] __device__ bool has_normal_map() const { return m_normal_map != nullptr; }
 
+    [[nodiscard]] __device__ bool has_roughness_map() const { return m_roughness_map != nullptr; }
+
     __device__ __host__ void set_normal_map(DeviceTexture *texture) { m_normal_map = texture; }
+
+    __device__ __host__ void set_roughness_map(DeviceTexture *texture) { m_roughness_map = texture; }
 
     [[nodiscard]] __device__ __host__ const glm::vec3 &emission() const { return m_emission; }
 
@@ -28,13 +32,16 @@ public:
 
     __device__ __host__ void set_uv_scale(const glm::vec2 &value) { m_uv_scale = value; }
 
-    __device__ glm::vec3 sample_diffuse(const glm::vec2 &uv);
+    [[nodiscard]]  __device__ glm::vec3 sample_diffuse(const glm::vec2 &uv) const;
 
-    __device__ glm::vec3 sample_normal(const glm::vec2 &uv);
+    [[nodiscard]] __device__ glm::vec3 sample_normal(const glm::vec2 &uv) const;
+
+    [[nodiscard]] __device__ glm::vec3 sample_roughness(const glm::vec2 &uv) const;
 
 private:
     DeviceTexture *m_diffuse;
     DeviceTexture *m_normal_map{};
+    DeviceTexture *m_roughness_map{}; // TODO: Implement support for 8bpp textures
     glm::vec3 m_emission{};
     float m_reflectivity{};
     glm::vec2 m_uv_scale;
