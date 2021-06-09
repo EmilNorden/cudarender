@@ -18,6 +18,7 @@
 #include "renderer/device_random.cuh"
 #include "renderer/autofocus.cuh"
 #include "renderer/device_texture_loader.cuh"
+#include "renderer/device_material_loader.cuh"
 
 #if defined(RENDER_DEBUG)
 #define DEBUG_ASSERT_SDL(x) {                                   \
@@ -256,12 +257,6 @@ void mouse_button_callback(GLFWwindow *window, int button, int action, int mods)
     }
 }
 
-/*fn get_forward(mat: &glm::Mat4) -> glm::Vec3 {
-let inverted = glm::inverse(mat);
-let forward = glm::normalize(inverted[2]);
-glm::vec3(forward.x, forward.y, forward.z)
-}*/
-
 glm::vec3 get_forward(const glm::mat4x4 &mat) {
     auto inverted = glm::inverse(mat);
     auto forward = glm::normalize(inverted[2]);
@@ -303,49 +298,36 @@ int main() {
     camera->update();
 
     DeviceMeshLoader mesh_loader;
-
-    // auto house = mesh_loader.load("/home/emil/models/apple/apple.obj"); // 0.5 0.35 0.5
-    // auto house = mesh_loader.load("/home/emil/models/crate/crate1.obj");
-    // auto suzanne = house[0];
-
-    //std::vector<IndexedDeviceMesh> meshes;
-    //meshes.push_back(suzanne);
-
+    
     cudaDeviceSetLimit(cudaLimitStackSize, 2048);
 
     glfwPollEvents();
-    auto wall = DeviceTextureLoader{}.load("/home/emil/textures/Bricks059_4K-JPG/color.jpg");
-    auto wall_normal = DeviceTextureLoader{}.load("/home/emil/textures/Bricks059_4K-JPG/normal.jpg");
-    auto wall_roughness = DeviceTextureLoader{}.load("/home/emil/textures/Bricks059_4K-JPG/Bricks059_4K_Roughness.jpg");
     glfwPollEvents();
-    auto wood_diffuse = DeviceTextureLoader{}.load("/home/emil/textures/WoodFloor043_4K-JPG/color.jpg");
-    auto wood_normal = DeviceTextureLoader{}.load("/home/emil/textures/WoodFloor043_4K-JPG/normal.jpg");
-
-    auto nvidia_diffuse = DeviceTextureLoader{}.load("/home/emil/textures/nvidia/color.jpg");
 
     auto red_diffuse = DeviceTextureLoader{}.load("/home/emil/textures/Plastic007_4K-JPG/color.jpg");
 
+    DeviceTextureLoader texture_loader;
+    DeviceMaterialLoader material_loader{texture_loader};
+
+    auto wall_material = material_loader.load("/home/emil/textures/Bricks059_4K-JPG/");
+    wall_material.set_uv_scale(glm::vec2(4.0f, 4.0f));
+    auto wood_material = material_loader.load("/home/emil/textures/WoodFloor043_4K-JPG/");
+
+    auto nvidia_texture = texture_loader.load("/home/emil/textures/nvidia/color.jpg");
 
     std::vector<SceneEntity> entities;
 
     auto floor_mesh = mesh_loader.load("/home/emil/models/crate/crate1.obj");
-    floor_mesh[0]->material().set_diffuse_map(wood_diffuse);
-    floor_mesh[0]->material().set_uv_scale(glm::vec2(6.0f, 6.0f));
-    floor_mesh[0]->material().set_reflectivity(0.3f);
-    // floor_mesh[0]->material().set_normal_map(wood_normal);
+    floor_mesh[0]->set_material(wood_material);
 
     auto wall_mesh = mesh_loader.load("/home/emil/models/crate/crate1.obj");
-    wall_mesh[0]->material().set_diffuse_map(wall);
-    wall_mesh[0]->material().set_roughness_map(wall_roughness);
-    wall_mesh[0]->material().set_uv_scale(glm::vec2(4.0f, 4.0f));
+    wall_mesh[0]->set_material(wall_material);
 
     auto wall_mesh2 = mesh_loader.load("/home/emil/models/crate/crate1.obj");
-    wall_mesh2[0]->material().set_diffuse_map(wall);
-    wall_mesh2[0]->material().set_uv_scale(glm::vec2(4.0f, 4.0f));
-    //wall_mesh[0]->material().set_normal_map(wall_normal);
+    wall_mesh2[0]->set_material(wall_material);
 
     auto crate = mesh_loader.load("/home/emil/models/crate/crate1.obj");
-    crate[0]->material().set_diffuse_map(nvidia_diffuse);
+    crate[0]->material().set_diffuse_map(nvidia_texture);
     crate[0]->material().set_uv_scale(glm::vec2(-1.0f, 1.0f));
     entities.emplace_back(
             crate[0],
@@ -359,7 +341,7 @@ int main() {
     light_mesh[0]->material().set_emission(glm::vec3(1.0, 1.0, 1.0));
 
     auto dragon = mesh_loader.load("/home/emil/models/stanford_dragon/dragon.obj");
-    dragon[0]->material().set_diffuse_map(wall);
+    dragon[0]->set_material(wall_material);
     // dragon[0]->material().set_reflectivity(1.0f);
 
     // Dragon

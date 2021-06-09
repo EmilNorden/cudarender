@@ -18,6 +18,8 @@ add_library(renderer
         renderer/cuda_utils.cuh
         renderer/device_material.cu
         renderer/device_material.cuh
+        renderer/device_material_loader.cu
+        renderer/device_material_loader.cuh
         renderer/device_mesh_loader.cu
         renderer/device_mesh_loader.cuh
         renderer/device_mesh.cu

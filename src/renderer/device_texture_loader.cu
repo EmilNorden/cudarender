@@ -50,3 +50,13 @@ DeviceTexture *DeviceTextureLoader::load(const std::string &path) {
     cudaMallocManaged(&texture, sizeof(DeviceTexture));
     return new(texture) DeviceTexture{pixels, width, height};
 }
+
+bool DeviceTextureLoader::file_is_supported(const std::string &path) {
+    FREE_IMAGE_FORMAT type = FreeImage_GetFileType(path.c_str());
+
+    if (type == FIF_UNKNOWN) {
+        type = FreeImage_GetFIFFromFilename(path.c_str());
+    }
+
+    return type != FIF_UNKNOWN;
+}

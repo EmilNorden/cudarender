@@ -43,6 +43,8 @@ public:
 
     [[nodiscard]] __device__ __host__ DeviceMaterial &material() { return m_material; }
 
+    __host__ void set_material(const DeviceMaterial& mat) { m_material = mat; }
+
     [[nodiscard]] __host__ const AABB &bounds() { return m_bounds; }
 
     [[nodiscard]] __device__ TriangleFace get_random_face(RandomGenerator &random);

@@ -8,6 +8,7 @@ class DeviceTexture;
 class DeviceTextureLoader {
 public:
     DeviceTexture *load(const std::string &path);
+    static bool file_is_supported(const std::string &path);
 private:
 };
 
