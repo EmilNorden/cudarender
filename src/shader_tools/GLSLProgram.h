@@ -19,7 +19,7 @@ public:
     GLSLProgram();
     GLSLProgram(GLSLShader* vertex, GLSLShader* fragment);
     void compile();
-    void use();
+    void use() const;
 private:
     void printLinkError(GLuint program);
 };

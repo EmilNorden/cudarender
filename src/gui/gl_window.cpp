@@ -8,6 +8,34 @@
 #include <string>
 #include <stdexcept>
 
+static const char *glsl_drawtex_vertshader_src =
+        "#version 330 core\n"
+        "layout (location = 0) in vec3 position;\n"
+        "layout (location = 1) in vec3 color;\n"
+        "layout (location = 2) in vec2 texCoord;\n"
+        "\n"
+        "out vec3 ourColor;\n"
+        "out vec2 ourTexCoord;\n"
+        "\n"
+        "void main()\n"
+        "{\n"
+        "	gl_Position = vec4(position, 1.0f);\n"
+        "	ourColor = color;\n"
+        "	ourTexCoord = texCoord;\n"
+        "}\n";
+
+static const char *glsl_drawtex_fragshader_src =
+        "#version 330 core\n"
+        "uniform sampler2D tex;\n"
+        "in vec3 ourColor;\n"
+        "in vec2 ourTexCoord;\n"
+        "out vec4 color;\n"
+        "void main()\n"
+        "{\n"
+        "   	vec4 c = texture(tex, ourTexCoord);\n"
+        "   	color = c;\n"
+        "}\n";
+
 
 // QUAD GEOMETRY
 static GLfloat vertices[] = {
@@ -75,6 +103,11 @@ GlWindow::GlWindow(const std::string& title, int width, int height, GLFWkeyfun k
     // Note that this is allowed, the call to glVertexAttribPointer registered VBO as the currently bound
     // vertex buffer object so afterwards we can safely unbind
     glBindVertexArray(0);
+
+    drawtex_v = GLSLShader("Textured draw vertex shader", glsl_drawtex_vertshader_src, GL_VERTEX_SHADER);
+    drawtex_f = GLSLShader("Textured draw fragment shader", glsl_drawtex_fragshader_src, GL_FRAGMENT_SHADER);
+    shdrawtex = GLSLProgram(&drawtex_v, &drawtex_f);
+    shdrawtex.compile();
 }
 
 void GlWindow::swap() {
@@ -86,6 +119,9 @@ bool GlWindow::should_close() {
 }
 
 void GlWindow::draw() const {
+    shdrawtex.use();
+    glUniform1i(glGetUniformLocation(shdrawtex.program, "tex"), 0);
+
     glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT);
 

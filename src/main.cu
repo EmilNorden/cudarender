@@ -35,9 +35,7 @@
 
 // OpenGL
 // GLuint VBO, VAO, EBO;
-GLSLShader drawtex_f; // GLSL fragment shader
-GLSLShader drawtex_v; // GLSL fragment shader
-GLSLProgram shdrawtex; // GLSLS program for textured draw
+
 
 // CUDA <-> OpenGL interop
 GLuint opengl_tex_cuda;
@@ -67,33 +65,6 @@ void add(int n, float *x, float *y) {
     }
 }
 
-static const char *glsl_drawtex_vertshader_src =
-        "#version 330 core\n"
-        "layout (location = 0) in vec3 position;\n"
-        "layout (location = 1) in vec3 color;\n"
-        "layout (location = 2) in vec2 texCoord;\n"
-        "\n"
-        "out vec3 ourColor;\n"
-        "out vec2 ourTexCoord;\n"
-        "\n"
-        "void main()\n"
-        "{\n"
-        "	gl_Position = vec4(position, 1.0f);\n"
-        "	ourColor = color;\n"
-        "	ourTexCoord = texCoord;\n"
-        "}\n";
-
-static const char *glsl_drawtex_fragshader_src =
-        "#version 330 core\n"
-        "uniform sampler2D tex;\n"
-        "in vec3 ourColor;\n"
-        "in vec2 ourTexCoord;\n"
-        "out vec4 color;\n"
-        "void main()\n"
-        "{\n"
-        "   	vec4 c = texture(tex, ourTexCoord);\n"
-        "   	color = c;\n"
-        "}\n";
 
 void keyboard_func(GLFWwindow *window, int key, int scancode, int action, int mods) {}
 
@@ -131,11 +102,6 @@ void init_glfw() {
 
 void init_gl_buffers() {
     create_gl_texture(&opengl_tex_cuda, WIDTH, HEIGHT);
-
-    drawtex_v = GLSLShader("Textured draw vertex shader", glsl_drawtex_vertshader_src, GL_VERTEX_SHADER);
-    drawtex_f = GLSLShader("Textured draw fragment shader", glsl_drawtex_fragshader_src, GL_FRAGMENT_SHADER);
-    shdrawtex = GLSLProgram(&drawtex_v, &drawtex_f);
-    shdrawtex.compile();
     check_for_gl_errors();
 }
 
@@ -148,8 +114,6 @@ void display(Camera *camera, Scene *scene, Renderer &renderer, GlWindow &window,
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, opengl_tex_cuda);
 
-    shdrawtex.use();
-    glUniform1i(glGetUniformLocation(shdrawtex.program, "tex"), 0);
 
     window.draw();
 
@@ -298,7 +262,7 @@ int main() {
     camera->update();
 
     DeviceMeshLoader mesh_loader;
-    
+
     cudaDeviceSetLimit(cudaLimitStackSize, 2048);
 
     glfwPollEvents();

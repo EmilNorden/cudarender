@@ -7,6 +7,8 @@
 #include <string>
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
+#include "../shader_tools/GLSLShader.h"
+#include "../shader_tools/GLSLProgram.h"
 
 struct GLFWwindow;
 
@@ -23,6 +25,9 @@ public:
 private:
     GLuint VBO, VAO, EBO;
     GLFWwindow *m_window;
+    GLSLShader drawtex_f; // GLSL fragment shader
+    GLSLShader drawtex_v; // GLSL fragment shader
+    GLSLProgram shdrawtex; // GLSLS program for textured draw
     int m_width;
     int m_height;
 };

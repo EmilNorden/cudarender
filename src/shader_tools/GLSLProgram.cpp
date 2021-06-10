@@ -42,7 +42,7 @@ void GLSLProgram::compile() {
     }
 }
 
-void GLSLProgram::use() {
+void GLSLProgram::use() const {
     glUseProgram(this->program);
 }
 
