@@ -2,48 +2,38 @@
 #define RENDERER_CAMERA_CUH_
 
 #include "ray.cuh"
+#include "renderer_defs.h"
 
 class RandomGenerator;
-
+/*auto camera = create_device_type<Camera>();*/
 class Camera {
 public:
-    __device__ __host__ Camera()
-            : m_needs_update(true),
-              m_position({0, 0, 0}),
-              m_direction({0, 0, -1}),
-              m_up({0, 1, 0}),
-              m_resolution({0, 0}),
-              m_fov(Camera::default_fov),
-              m_ratio(0),
-              m_blur_radius(0),
-              m_focal_length(Camera::default_focal_length),
-              m_shutter_speed(0) {}
-
-    __device__ __host__ void set_position(const glm::vec3 &pos) {
+    static Camera* create();
+    DEVICE_FUNC HOST_FUNC void set_position(const glm::vec3 &pos) {
         if(m_position != pos) {
             m_position = pos;
             m_needs_update = true;
         }
     }
 
-    __device__ __host__ void set_direction(const glm::vec3 &dir) {
+    DEVICE_FUNC HOST_FUNC void set_direction(const glm::vec3 &dir) {
         if(m_direction != dir) {
             m_direction = dir;
             m_needs_update = true;
         }
     }
 
-    __device__ __host__ void set_up(const glm::vec3 &up) { m_up = up; }
+    DEVICE_FUNC HOST_FUNC void set_up(const glm::vec3 &up) { m_up = up; }
 
-    __device__ __host__ void set_field_of_view(float fov) { m_fov = fov; }
+    DEVICE_FUNC HOST_FUNC void set_field_of_view(float fov) { m_fov = fov; }
 
-    __device__ __host__ void set_blur_radius(float radius) { m_blur_radius = radius; }
+    DEVICE_FUNC HOST_FUNC void set_blur_radius(float radius) { m_blur_radius = radius; }
 
-    __device__ __host__ void set_focal_length(float length) { m_focal_length = length; }
+    DEVICE_FUNC HOST_FUNC void set_focal_length(float length) { m_focal_length = length; }
 
-    __device__ __host__ void set_shutter_speed(float speed) { m_shutter_speed = speed; }
+    DEVICE_FUNC HOST_FUNC void set_shutter_speed(float speed) { m_shutter_speed = speed; }
 
-    __device__ __host__ void set_resolution(const glm::vec2 &res) {
+    DEVICE_FUNC HOST_FUNC void set_resolution(const glm::vec2 &res) {
         m_resolution = res;
         m_ratio = m_resolution.x / static_cast<float>(m_resolution.y);
     }
@@ -60,15 +50,15 @@ public:
 
     [[nodiscard]] float blur_radius() const { return m_blur_radius; }
 
-    [[nodiscard]] __device__ __host__ float focal_length() const { return m_focal_length; }
+    [[nodiscard]] DEVICE_FUNC HOST_FUNC float focal_length() const { return m_focal_length; }
 
     [[nodiscard]] float shutter_speed() const { return m_shutter_speed; }
 
     [[nodiscard]] bool needs_update() const { return m_needs_update; }
 
-    __device__ __host__ void update() {
+    DEVICE_FUNC HOST_FUNC void update() {
         m_needs_update = false;
-        const float distance = 10.0;
+        const float distance =  10.0;
 
         double image_plane_height = 2 * distance * tan(m_fov / 2.0);
         double image_plane_width = image_plane_height * m_ratio;
@@ -97,9 +87,9 @@ public:
         m_pixel_height = (float) (image_plane_height / (float) m_resolution.y);
     }
 
-    [[nodiscard]] __device__ WorldSpaceRay cast_ray(size_t x, size_t y) const;
+    [[nodiscard]] DEVICE_FUNC WorldSpaceRay cast_ray(size_t x, size_t y) const;
 
-    [[nodiscard]] __device__ WorldSpaceRay cast_perturbed_ray(
+    [[nodiscard]] DEVICE_FUNC WorldSpaceRay cast_perturbed_ray(
             size_t x,
             size_t y,
             RandomGenerator &random) const;
@@ -107,6 +97,18 @@ public:
     [[nodiscard]] glm::vec2 project_onto_image_plane(const glm::vec3 &world_coord) const;
 
 private:
+    DEVICE_FUNC HOST_FUNC Camera()
+            : m_needs_update(true),
+              m_position({0, 0, 0}),
+              m_direction({0, 0, -1}),
+              m_up({0, 1, 0}),
+              m_resolution({0, 0}),
+              m_fov(Camera::default_fov),
+              m_ratio(0),
+              m_blur_radius(0),
+              m_focal_length(Camera::default_focal_length),
+              m_shutter_speed(0) {}
+
     const float default_fov = 1.047f;
     const float default_focal_length = std::numeric_limits<float>::max();
     bool m_needs_update;

@@ -1,5 +1,6 @@
 #include "camera.cuh"
 #include "device_random.cuh"
+#include "cuda_utils.cuh"
 
 #define PI 3.14159265359
 
@@ -51,4 +52,10 @@ glm::vec2 Camera::project_onto_image_plane(const glm::vec3 &world_coord) const
     float y1 = y / -m_pixel_height;
 
     return glm::vec2{x1, y1};
+}
+
+Camera *Camera::create() {
+    Camera *object;
+    cudaMallocManaged(&object, sizeof(Camera));
+    return new(object) Camera{};
 }

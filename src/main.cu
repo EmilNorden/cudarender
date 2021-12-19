@@ -19,6 +19,7 @@
 #include "renderer/autofocus.cuh"
 #include "renderer/device_texture_loader.cuh"
 #include "renderer/device_material_loader.cuh"
+#include "renderer/cuda_utils.cuh"
 
 #if defined(RENDER_DEBUG)
 #define DEBUG_ASSERT_SDL(x) {                                   \
@@ -167,13 +168,6 @@ std::vector<TriangleFace> faces_from_indices(const std::vector<int> &indices) {
     return faces;
 }
 
-template<typename T, typename... Args>
-T *create_device_type(Args &&... args) {
-    T *object;
-    cudaMallocManaged(&object, sizeof(T));
-    return new(object) T(std::forward<Args>(args)...);
-}
-
 void handle_input(GLFWwindow *window, Camera *camera, Scene *scene) {
 
     auto speed = 3.0f;
@@ -245,7 +239,7 @@ int main() {
 
     Renderer rend{opengl_tex_cuda, WIDTH, HEIGHT};
 
-    auto camera = create_device_type<Camera>();
+    auto camera = Camera::create();
 
     float rot = 1.45f;
     //auto camera_position = glm::vec3(glm::cos(rot) * 10.0, 0.0000, glm::sin(rot) * 10.0f);

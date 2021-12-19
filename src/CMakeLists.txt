@@ -70,6 +70,9 @@ set_target_properties(
         PROPERTIES
         CUDA_SEPARABLE_COMPILATION ON)
 
+target_compile_definitions(renderer PUBLIC RENDERER_CUDA_BUILD)
+
+
 ### BINARY
 
 add_executable(renderer_bin

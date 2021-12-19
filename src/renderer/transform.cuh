@@ -4,6 +4,7 @@
 #include <glm/glm.hpp>
 #include <glm/gtx/transform.hpp>
 #include <optional>
+#include "renderer_defs.h"
 
 class Transform {
 public:
@@ -12,11 +13,11 @@ public:
 
     }
 
-    [[nodiscard]] __device__ glm::vec3 transform_coordinate(const glm::vec3 &coordinate) const {
+    [[nodiscard]] DEVICE_FUNC glm::vec3 transform_coordinate(const glm::vec3 &coordinate) const {
         return glm::vec3(m_transform * glm::vec4(coordinate, 1));
     }
 
-    [[nodiscard]] __device__ glm::vec3 transform_normal(const glm::vec3 &normal) const {
+    [[nodiscard]] DEVICE_FUNC glm::vec3 transform_normal(const glm::vec3 &normal) const {
         return glm::normalize(glm::vec3(m_transform * glm::vec4(normal, 0)));
     }
 

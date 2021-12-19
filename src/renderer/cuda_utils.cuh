@@ -16,4 +16,12 @@ void transfer_vector_to_device_memory(const std::vector<T>& items, T** device_me
     cuda_assert(cudaMemcpy(*device_memory, items.data(), sizeof(T) * items.size(), cudaMemcpyHostToDevice));
 }
 
+template<typename T, typename... Args>
+T *create_device_type(Args &&... args) {
+    T *object;
+    cudaMallocManaged(&object, sizeof(T));
+    return new(object) T(std::forward<Args>(args)...);
+}
+
+
 #endif //RENDERER_CUDA_UTILS_CUH
