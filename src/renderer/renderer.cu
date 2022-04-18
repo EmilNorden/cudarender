@@ -99,6 +99,7 @@ struct EmissiveSurface {
     // surface data
     glm::vec3 world_space_normal{};
     glm::vec3 world_coordinate{};
+    glm::vec3 diffuse_color;
     float roughness{};
     SceneEntity *entity; // Remove this later and compare intersections using coordinates or something
 };
@@ -109,8 +110,19 @@ struct LightPath {
     size_t surface_count{};
 };
 
+__device__ float matte_brdf(const glm::vec3 &incoming, const ::glm::vec3 &outgoing, const glm::vec3 &surface_normal) {
+    auto half = (incoming + outgoing) / 2.0f;
+    auto theta = glm::dot(surface_normal, half);
+    if(theta < 0) {
+        return 0;
+    }
+
+    return theta;
+}
+
+template<int N>
 __device__ glm::vec3
-trace_ray(const WorldSpaceRay &ray, Scene *scene, LightPath<3> &light_path, RandomGenerator &random, int depth) {
+trace_ray(const WorldSpaceRay &ray, Scene *scene, LightPath<N> &light_path, RandomGenerator &random, int depth) {
     if (depth == 0) {
         return glm::vec3(0, 0, 0);
     }
@@ -136,7 +148,7 @@ trace_ray(const WorldSpaceRay &ray, Scene *scene, LightPath<3> &light_path, Rand
 
         // return object_space_normal;
 
-        if (material.has_normal_map()) {
+        if (false && material.has_normal_map()) {
             auto t0 = entity->mesh()->tangents()[intersection.i0];
             auto t1 = entity->mesh()->tangents()[intersection.i1];
             auto t2 = entity->mesh()->tangents()[intersection.i2];
@@ -195,22 +207,31 @@ trace_ray(const WorldSpaceRay &ray, Scene *scene, LightPath<3> &light_path, Rand
                                  shadow_entity->mesh()->material().emission();
             }
         }*/
-
         glm::vec3 incoming_light{};
 
-        for (auto i = 0; i < 1; ++i) {
-        // for (auto i = 0; i < light_path.surface_count; ++i) { // Uncomment for ugly indirect light
+        //for (auto i = 0; i < 1; ++i) {
+        for (auto i = 0; i < light_path.surface_count; ++i) { // Uncomment for ugly indirect light
             auto shadow_ray = WorldSpaceRay{
                     intersection_coordinate + (world_space_normal * 0.1f),
                     glm::normalize(light_path.surfaces[i].world_coordinate - intersection_coordinate)
             };
 
-
             Intersection shadow_intersection;
             SceneEntity *shadow_entity;
             if (scene->intersect(shadow_ray, shadow_intersection, &shadow_entity)) {
                 if (shadow_entity == light_path.surfaces[i].entity) {
-                    incoming_light += light_path.surfaces[i].emission;
+                    if (i == 0) {
+                        incoming_light += light_path.surfaces[i].emission;
+                    } else {
+                        auto brdf_light = matte_brdf(light_path.surfaces[i].incoming_direction,
+                                                     shadow_ray.direction() * -1.0f,
+                                                     light_path.surfaces[i].world_space_normal) *
+                                          light_path.surfaces[i].incoming_emission;
+                       incoming_light += brdf_light;
+                    }
+                    // incoming_light += light_path.surfaces[i].emission;
+
+
                 }
             }
         }
@@ -224,8 +245,9 @@ trace_ray(const WorldSpaceRay &ray, Scene *scene, LightPath<3> &light_path, Rand
 
 }
 
-__device__ LightPath<3> generate_light_path(Scene *scene, RandomGenerator &random) {
-    LightPath<3> result;
+template<int N>
+__device__ LightPath<N> generate_light_path(Scene *scene, RandomGenerator &random) {
+    LightPath<N> result;
 
     auto light = scene->get_random_emissive_entity(random);
     auto surface = light->get_random_emissive_surface(random);
@@ -235,8 +257,12 @@ __device__ LightPath<3> generate_light_path(Scene *scene, RandomGenerator &rando
     result.surfaces[0].emission = surface.mesh->material().emission(); // TODO: Should this be emission in the direction of the next surface?
     result.surfaces[0].entity = light;
     result.surfaces[0].roughness = 1.0f;
+    result.surfaces[0].incoming_emission = glm::vec3(0.0, 0.0, 0.0);
+    result.surface_count = 1;
 
-    for (result.surface_count = 1; result.surface_count < 3; ++result.surface_count) {
+    for (result.surface_count = 1; result.surface_count < N; ++result.surface_count) {
+        auto &previous_surface = result.surfaces[result.surface_count - 1];
+        auto &current_surface = result.surfaces[result.surface_count];
         // If we just take a random unit vector in the hemisphere of the normal, we get a perfectly diffuse look on every surface
         // I think I need to calculate the reflected angle and then sample a random vector around THAT, but constrained based on roughness map
 
@@ -246,26 +272,26 @@ __device__ LightPath<3> generate_light_path(Scene *scene, RandomGenerator &rando
 
         }*/
 
-        glm::vec3 direction{};
-        if (result.surface_count == 1) {
+        glm::vec3 path_direction = geom::random_unit_in_hemisphere(previous_surface.world_space_normal, random);
+        /*if (result.surface_count == 1) {
             direction = geom::random_unit_in_hemisphere(result.surfaces[result.surface_count - 1].world_space_normal,
                                                         random);
         } else {
             auto reflected_direction = glm::reflect(result.surfaces[result.surface_count - 1].incoming_direction,
                                                     result.surfaces[result.surface_count - 1].world_space_normal);
             direction = geom::random_unit_in_cone(reflected_direction, result.surfaces[result.surface_count - 1].roughness * glm::pi<float>(), random);
-        }
+        }*/
 
 
-        auto ray = WorldSpaceRay{
-                result.surfaces[result.surface_count - 1].world_coordinate + (direction * 0.1f),
-                direction
+        auto path_ray = WorldSpaceRay{
+                previous_surface.world_coordinate + (path_direction * 0.1f),
+                path_direction
         };
 
         Intersection intersection;
         SceneEntity *entity;
 
-        if (!scene->intersect(ray, intersection, &entity)) {
+        if (!scene->intersect(path_ray, intersection, &entity)) {
             break;
         }
 
@@ -277,6 +303,8 @@ __device__ LightPath<3> generate_light_path(Scene *scene, RandomGenerator &rando
         auto texcoord2 = entity->mesh()->texture_coordinates()[intersection.i2];
 
         auto texture_uv = texcoord0 * w + texcoord1 * intersection.u + texcoord2 * intersection.v;
+
+        auto diffuse = material.sample_diffuse(texture_uv);
 
         // Calculate normal
         auto n0 = entity->mesh()->normals()[intersection.i0];
@@ -310,20 +338,31 @@ __device__ LightPath<3> generate_light_path(Scene *scene, RandomGenerator &rando
 
         auto world_space_normal = entity->world().transform_normal(
                 object_space_normal);
-        result.surfaces[result.surface_count].roughness = material.has_roughness_map() ? material.sample_roughness(
+
+        auto dir_prev_surface = path_direction * -1.0f;
+        current_surface.roughness = material.has_roughness_map() ? material.sample_roughness(
                 texture_uv).x : 1.0f;
-        result.surfaces[result.surface_count].world_coordinate = ray.origin() + (intersection.distance * direction);
-        result.surfaces[result.surface_count].world_space_normal = world_space_normal;
-        result.surfaces[result.surface_count].emission = material.emission() + (material.sample_diffuse(texture_uv) *
-                                                                                result.surfaces[result.surface_count -
-                                                                                                1].emission * (1.0f -
-                                                                                                               glm::dot(
-                                                                                                                       world_space_normal,
-                                                                                                                       direction)));
-        result.surfaces[result.surface_count].incoming_direction = direction;
-        result.surfaces[result.surface_count].incoming_emission = result.surfaces[result.surface_count -
-                                                                                  1].emission; // TODO: As with the other TODO above. Shouldn't I calculate the amount the previous surface emitted in THIS DIRECTION? This code assumes all lights emit equally. But perhaps that is the case?
-        result.surfaces[result.surface_count].entity = entity;
+        current_surface.world_coordinate =
+                path_ray.origin() + (intersection.distance * path_direction);
+        current_surface.world_space_normal = world_space_normal;
+        current_surface.emission = material.emission();
+
+        current_surface.incoming_direction = dir_prev_surface;
+        if (result.surface_count == 1) {
+            // Previous surface IS the light source
+            current_surface.incoming_emission = previous_surface.emission;
+        } else {
+            auto amount_light_reflected = matte_brdf(
+                    previous_surface.incoming_direction,
+                    path_direction,
+                    previous_surface.world_space_normal
+            );
+            current_surface.incoming_emission =
+                    (amount_light_reflected * previous_surface.incoming_emission)
+                    + previous_surface.emission;
+        }
+        current_surface.incoming_emission *= diffuse;
+        current_surface.entity = entity;
     }
 
     return result;
@@ -349,9 +388,9 @@ cudaRender(float *g_odata, Camera *camera, Scene *scene, RandomGeneratorPool *ra
     if (x < width && y < height) {
         auto ray = camera->cast_perturbed_ray(x, y, random);
 
-        auto light_path = generate_light_path(scene, random);
+        auto light_path = generate_light_path<2>(scene, random);
 
-        auto color = trace_ray(ray, scene, light_path, random, 3);
+        auto color = trace_ray<2>(ray, scene, light_path, random, 3);
 
         color = glm::clamp(color, {0, 0, 0}, {1, 1, 1});
 

@@ -154,7 +154,7 @@ __host__ IndexedDeviceMesh::IndexedDeviceMesh(const std::vector<glm::vec3> &vert
 
 void IndexedDeviceMesh::build_node(TreeNode &node, std::vector<TriangleFace> &faces, Axis current_axis) {
 
-    if (faces.size() < 25) {
+    if (faces.size() < 100) {
         cuda_assert(cudaMalloc(&node.faces, sizeof(TriangleFace) * faces.size()));
         cuda_assert(cudaMemcpy(node.faces, faces.data(), sizeof(TriangleFace) * faces.size(), cudaMemcpyHostToDevice));
         node.face_count = faces.size();

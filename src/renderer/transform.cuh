@@ -45,6 +45,11 @@ public:
 
 class WorldTransformBuilder {
 public:
+    WorldTransformBuilder &with_object_space_translation(const glm::vec3 &translation) {
+        m_object_space_translation = translation;
+        return *this;
+    }
+
     WorldTransformBuilder &with_translation(const glm::vec3 &translation) {
         m_translation = translation;
         return *this;
@@ -66,6 +71,7 @@ public:
     }
 
     WorldTransform build() {
+        auto object_space_translation = m_object_space_translation.value_or(glm::vec3(0.0, 0.0, 0.0));
         auto translation = m_translation.value_or(glm::vec3(0.0, 0.0, 0.0));
         auto rotation = m_rotation.value_or(glm::vec3(0.0, 0.0, 0.0));
         auto scale = m_scale.value_or(glm::vec3(1.0, 1.0, 1.0));
@@ -73,13 +79,15 @@ public:
                 glm::rotate(rotation.z, glm::vec3(0.0, 0.0, 1.0)) *
                 glm::rotate(rotation.y, glm::vec3(0.0, 1.0, 0.0)) *
                 glm::rotate(rotation.x, glm::vec3(1.0, 0.0, 0.0)) *
-                glm::scale(scale);
+                glm::scale(scale) *
+                glm::translate(object_space_translation);
 
         return WorldTransform{world};
 
     }
 
 private:
+    std::optional<glm::vec3> m_object_space_translation;
     std::optional<glm::vec3> m_translation;
     std::optional<glm::vec3> m_rotation;
     std::optional<glm::vec3> m_scale;

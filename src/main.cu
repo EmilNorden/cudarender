@@ -228,55 +228,57 @@ void set_camera_direction(Camera *camera, float yaw, float pitch) {
     camera->set_direction(get_forward(final_rotation));
 }
 
-int main() {
-    init_glfw();
+void scene_house(DeviceMeshLoader& mesh_loader, DeviceMaterialLoader& material_loader, DeviceTextureLoader& texture_loader, std::vector<SceneEntity>& entities) {
+    auto light_mesh = mesh_loader.load("/home/emil/models/crate/crate1.obj");
+    light_mesh[0]->material().set_emission(glm::vec3(1.0, 1.0, 1.0));
+    entities.emplace_back(light_mesh[0],
+                          WorldTransformBuilder()
+                                  .with_translation({200.0, 3000.0, 0.0})
+                                  .with_scale({1000.0, 0.1f, 1000.0f})
+                                  .build());
 
-    GlWindow window{"Hello, world!", WIDTH, HEIGHT, keyboard_func};
-
-    init_gl_buffers();
-
-    print_cuda_device_info();
-
-    Renderer rend{opengl_tex_cuda, WIDTH, HEIGHT};
-
-    auto camera = Camera::create();
-
-    float rot = 1.45f;
-    //auto camera_position = glm::vec3(glm::cos(rot) * 10.0, 0.0000, glm::sin(rot) * 10.0f);
-    auto camera_position = glm::vec3(90.0, 100.0, 200.0);
-    auto camera_direction = glm::normalize(glm::vec3(0.0, 0.0, -60.0f) - camera_position);
-    camera->set_position(camera_position);
-    camera->set_direction(camera_direction);
-    camera->set_up(glm::vec3(0.0, 1.0, 0.0));
-    camera->set_field_of_view(75.0 * (3.1415 / 180.0));
-    camera->set_blur_radius(0.3); // (0.03);
-    camera->set_focal_length(60.0);
-    camera->set_shutter_speed(0.0);
-    camera->set_resolution(glm::vec2(WIDTH, HEIGHT));
-    camera->update();
-
-    DeviceMeshLoader mesh_loader;
-
-    cudaDeviceSetLimit(cudaLimitStackSize, 2048);
-
-    glfwPollEvents();
-    glfwPollEvents();
-
-    auto red_diffuse = DeviceTextureLoader{}.load("/home/emil/textures/Plastic007_4K-JPG/color.jpg");
-
-    DeviceTextureLoader texture_loader;
-    DeviceMaterialLoader material_loader{texture_loader};
-
-    auto wall_material = material_loader.load("/home/emil/textures/Bricks059_4K-JPG/");
-    wall_material.set_uv_scale(glm::vec2(4.0f, 4.0f));
-    auto wood_material = material_loader.load("/home/emil/textures/WoodFloor043_4K-JPG/");
-
-    auto nvidia_texture = texture_loader.load("/home/emil/textures/nvidia/color.jpg");
-
-    std::vector<SceneEntity> entities;
+    auto house = mesh_loader.load("/home/emil/models/house1/black_smith.obj");
+    entities.emplace_back(
+            house[0],
+            WorldTransformBuilder()
+                    .with_translation({0.0, 90.0, 0.0})
+                    .with_uniform_scale(100.0f)
+                    .build()
+    );
 
     auto floor_mesh = mesh_loader.load("/home/emil/models/crate/crate1.obj");
-    floor_mesh[0]->set_material(wood_material);
+    auto grass = material_loader.load("/home/emil/textures/Grass001_4K-JPG/");
+    floor_mesh[0]->set_material(grass);
+    entities.emplace_back(
+            floor_mesh[0],
+            WorldTransformBuilder()
+                    .with_translation({0.0, 0.0, 0.0})
+                    .with_scale({100.0, 0.1, 100.0})
+                    .build()
+    );
+}
+
+void scene_wall_lamps(DeviceMeshLoader& mesh_loader, DeviceMaterialLoader& material_loader, DeviceTextureLoader& texture_loader, std::vector<SceneEntity>& entities) {
+    auto wall_material = material_loader.load("/home/emil/textures/Bricks059_4K-JPG/");
+    wall_material.set_uv_scale(glm::vec2(4.0f, 4.0f));
+    // auto wood_material = material_loader.load("/home/emil/textures/WoodFloor043_4K-JPG/");
+    auto paper_material = material_loader.load("/home/emil/textures/Paper001_4K-JPG/");
+
+    auto nvidia_texture = texture_loader.load("/home/emil/textures/nvidia/color.png");
+    auto black_mat = material_loader.load("/home/emil/textures/black/");
+
+
+
+    auto wall_lamp = mesh_loader.load("/home/emil/models/wall_lamp/lamp.obj");
+    wall_lamp[0]->set_material(wall_material);
+    wall_lamp[1]->set_material(wall_material);
+    wall_lamp[2]->set_material(wall_material);
+    wall_lamp[2]->material().set_emission({1.0, 1.0, 1.0});
+    wall_lamp[3]->set_material(wall_material);
+
+
+    auto floor_mesh = mesh_loader.load("/home/emil/models/crate/crate1.obj");
+    floor_mesh[0]->set_material(wall_material);
 
     auto wall_mesh = mesh_loader.load("/home/emil/models/crate/crate1.obj");
     wall_mesh[0]->set_material(wall_material);
@@ -295,11 +297,25 @@ int main() {
                     .build()
     );
 
-    auto light_mesh = mesh_loader.load("/home/emil/models/crate/crate1.obj");
+    /*auto light_mesh = mesh_loader.load("/home/emil/models/crate/crate1.obj");
     light_mesh[0]->material().set_emission(glm::vec3(1.0, 1.0, 1.0));
+    entities.emplace_back(light_mesh[0],
+                          WorldTransformBuilder()
+                                  .with_translation({200.0, 300.0, 0.0})
+                                  .with_uniform_scale(2.0)
+                                  .build());
+*/
+    auto house = mesh_loader.load("/home/emil/models/house1/black_smith.obj");
+    /*entities.emplace_back(
+            house[0],
+            WorldTransformBuilder()
+                    .with_translation({0.0, 90.0, 0.0})
+                    .with_uniform_scale(100.0f)
+                    .build()
+    );*/
 
     auto dragon = mesh_loader.load("/home/emil/models/stanford_dragon/dragon.obj");
-    dragon[0]->set_material(wall_material);
+    dragon[0]->set_material(paper_material);
     // dragon[0]->material().set_reflectivity(1.0f);
 
     // Dragon
@@ -318,13 +334,8 @@ int main() {
                                   .with_scale({10.0, 0.1, 10.0})
                                   .build());*/
 
-    entities.emplace_back(light_mesh[0],
-                          WorldTransformBuilder()
-                                  .with_translation({200.0, 300.0, 0.0})
-                                  .with_uniform_scale(1.0)
-                                  .build());
 
-
+    auto lamp_height = 150.0f;
     // Mesh size is 96x96x96 cm, scaled to 960x9.6x960cm
     // Floor
     entities.emplace_back(
@@ -353,6 +364,17 @@ int main() {
                     .with_scale({10.0, 0.1, 10.0})
                     .build()
     );
+    for(int i = 0; i < 4; ++i) {
+        entities.emplace_back(
+                wall_lamp[i],
+                WorldTransformBuilder()
+                        .with_object_space_translation({0.0, -2.0246, 0.0})
+                        .with_translation({0.0, lamp_height, 515.0})
+                        .with_rotation({0.0, glm::pi<float>(), 0.0f})
+                        .with_uniform_scale(300.0f)
+                        .build()
+        );
+    }
 
     // Back wall
     entities.emplace_back(
@@ -363,6 +385,17 @@ int main() {
                     .with_scale({10.0, 0.1, 10.0})
                     .build()
     );
+    for(int i = 0; i < 4; ++i) {
+        entities.emplace_back(
+                wall_lamp[i],
+                WorldTransformBuilder()
+                        .with_object_space_translation({0.0, -2.0246, 0.0})
+                        .with_translation({0.0, lamp_height, -505.0})
+                        .with_rotation({0.0, 0.0, 0.0f})
+                        .with_uniform_scale(300.0f)
+                        .build()
+        );
+    }
 
     // Left wall
     entities.emplace_back(
@@ -373,6 +406,17 @@ int main() {
                     .with_scale({10.0, 0.1, 10.0})
                     .build()
     );
+    for(int i = 0; i < 4; ++i) {
+        entities.emplace_back(
+                wall_lamp[i],
+                WorldTransformBuilder()
+                        .with_object_space_translation({0.0, -2.0246, 0.0})
+                        .with_translation({-515.0, lamp_height, 0.0f})
+                        .with_rotation({0.0, glm::pi<float>() / 2.0, 0.0f})
+                        .with_uniform_scale(300.0f)
+                        .build()
+        );
+    }
 
     // Right wall
     entities.emplace_back(
@@ -384,6 +428,60 @@ int main() {
                     .build()
     );
 
+    for(int i = 0; i < 4; ++i) {
+        entities.emplace_back(
+                wall_lamp[i],
+                WorldTransformBuilder()
+                        .with_object_space_translation({0.0, -2.0246, 0.0})
+                        .with_translation({515.0, lamp_height, 0.0f})
+                        .with_rotation({0.0, -glm::pi<float>() / 2.0, 0.0f})
+                        .with_uniform_scale(300.0f)
+                        .build()
+        );
+    }
+}
+
+int main() {
+    init_glfw();
+
+    GlWindow window{"Hello, world!", WIDTH, HEIGHT, keyboard_func};
+
+    init_gl_buffers();
+
+    print_cuda_device_info();
+
+    Renderer rend{opengl_tex_cuda, WIDTH, HEIGHT};
+
+    auto camera = Camera::create();
+
+    float rot = 1.45f;
+    //auto camera_position = glm::vec3(glm::cos(rot) * 10.0, 0.0000, glm::sin(rot) * 10.0f);
+    // auto camera_position = glm::vec3(90.0, 100.0, 200.0);
+    auto camera_position = glm::vec3(0.0, 100.0, -100.0);
+    auto camera_direction = glm::normalize(glm::vec3(0.0, 100.0, -300.0f) - camera_position);
+    camera->set_position(camera_position);
+    camera->set_direction(camera_direction);
+    camera->set_up(glm::vec3(0.0, 1.0, 0.0));
+    camera->set_field_of_view(75.0 * (3.1415 / 180.0));
+    camera->set_blur_radius(0.3); // (0.03);
+    camera->set_focal_length(60.0);
+    camera->set_shutter_speed(0.0);
+    camera->set_resolution(glm::vec2(WIDTH, HEIGHT));
+    camera->update();
+
+    DeviceMeshLoader mesh_loader;
+
+    cudaDeviceSetLimit(cudaLimitStackSize, 2048);
+
+    glfwPollEvents();
+    glfwPollEvents();
+
+    DeviceTextureLoader texture_loader;
+    DeviceMaterialLoader material_loader{texture_loader};
+    std::vector<SceneEntity> entities;
+
+    // scene_wall_lamps(mesh_loader, material_loader, texture_loader, entities);
+    scene_house(mesh_loader, material_loader, texture_loader, entities);
 
     Scene *scene;
     cudaMallocManaged(&scene, sizeof(Scene));
@@ -405,8 +503,8 @@ int main() {
 
     auto run = true;
 
-    float yaw = 2.31;
-    float pitch = 0.015f;
+    float yaw = 3.1415;
+    float pitch = 0.0f;
 
     set_camera_direction(camera, yaw, pitch);
     device_autofocus(camera, scene, WIDTH, HEIGHT);
@@ -418,16 +516,13 @@ int main() {
         }
 
         if (glfwGetKey(window.handle(), GLFW_KEY_P)) {
-            dragon[0]->material().set_reflectivity(0.0f);
-            floor_mesh[0]->material().set_reflectivity(0.0f);
+            sample = 0;
         }
         if (glfwGetKey(window.handle(), GLFW_KEY_O)) {
-            dragon[0]->material().set_reflectivity(1.0f);
-            floor_mesh[0]->material().set_reflectivity(0.3f);
+            sample = 0;
         }
 
         if(glfwGetKey(window.handle(), GLFW_KEY_Y)) {
-            wall_mesh2[0]->material().set_diffuse_map(red_diffuse);
             sample = 0;
         }
 
