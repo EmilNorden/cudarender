@@ -5,7 +5,8 @@
 #include "transform.cuh"
 
 SceneEntity::SceneEntity(IndexedDeviceMesh *mesh, const WorldTransform &world_transform)
-        : m_world_transform(world_transform), m_inverse_world_transform(world_transform.invert()), m_mesh(mesh) {
+        : m_world_transform(world_transform), m_inverse_world_transform(world_transform.invert()),
+          m_transpose_inverse_world_transform(world_transform.invert().transpose()), m_mesh(mesh) {
 
 }
 
@@ -43,7 +44,7 @@ bool SceneEntity::is_emissive() const {
     auto n1 = m_mesh->normals()[face.i1];
     auto n2 = m_mesh->normals()[face.i2];
 
-    auto world_space_normal = m_world_transform.transform_normal(
+    auto world_space_normal = m_transpose_inverse_world_transform.transform_normal(
             n0 * w + n1 * u + n2 * v);
 
     auto v0 = m_mesh->vertices()[face.i0];

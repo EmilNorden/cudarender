@@ -165,9 +165,7 @@ trace_ray(const WorldSpaceRay &ray, Scene *scene, LightPath<N> &light_path, Rand
         auto n2 = entity->mesh()->normals()[intersection.i2];
         auto object_space_normal = glm::normalize(n0 * w + n1 * intersection.u + n2 * intersection.v);
 
-        // return object_space_normal;
-
-        if (false && material.has_normal_map()) {
+        if (material.has_normal_map()) {
             auto t0 = entity->mesh()->tangents()[intersection.i0];
             auto t1 = entity->mesh()->tangents()[intersection.i1];
             auto t2 = entity->mesh()->tangents()[intersection.i2];
@@ -185,11 +183,7 @@ trace_ray(const WorldSpaceRay &ray, Scene *scene, LightPath<N> &light_path, Rand
                                                                   object_space_tangent, object_space_bitangent));
         }
 
-        auto world_space_normal = entity->world().transform_normal(object_space_normal);
-
-        // return world_space_normal;
-
-
+        auto world_space_normal = entity->transpose_inverse_world().transform_normal(object_space_normal);
 
         auto diffuse_color = material.sample_diffuse(texture_uv);
 
@@ -362,7 +356,7 @@ __device__ LightPath<N> generate_light_path(Scene *scene, RandomGenerator &rando
             auto sampled_roughness = material.sample_roughness(texture_uv).x;
         }
 
-        auto world_space_normal = entity->world().transform_normal(
+        auto world_space_normal = entity->transpose_inverse_world().transform_normal(
                 object_space_normal);
 
         auto dir_prev_surface = path_direction * -1.0f;

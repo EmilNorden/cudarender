@@ -57,7 +57,7 @@ public:
     [[nodiscard]] DEVICE_FUNC ObjectSpaceRay to_object_space_ray(const InverseWorldTransform& transform) const {
         return ObjectSpaceRay{
             transform.transform_coordinate(m_origin),
-            transform.transform_normal(m_direction)
+            transform.transform_vector(m_direction)
         };
     }
 

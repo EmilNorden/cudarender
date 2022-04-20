@@ -17,18 +17,33 @@ public:
         return glm::vec3(m_transform * glm::vec4(coordinate, 1));
     }
 
-    [[nodiscard]] DEVICE_FUNC glm::vec3 transform_normal(const glm::vec3 &normal) const {
-        return glm::normalize(glm::vec3(m_transform * glm::vec4(normal, 0)));
+    [[nodiscard]] DEVICE_FUNC glm::vec3 transform_vector(const glm::vec3 &vector) const {
+        return glm::normalize(glm::vec3(m_transform * glm::vec4(vector, 0)));
     }
 
 protected:
     glm::mat4x4 m_transform;
 };
 
+class TransposeInverseWorldTransform : public Transform {
+public:
+    explicit TransposeInverseWorldTransform(const glm::mat4x4 &mat)
+            : Transform(mat) {
+    }
+
+    [[nodiscard]] DEVICE_FUNC glm::vec3 transform_normal(const glm::vec3 &normal) const {
+        return glm::normalize(glm::vec3(m_transform * glm::vec4(normal, 0)));
+    }
+};
+
 class InverseWorldTransform : public Transform {
 public:
     explicit InverseWorldTransform(const glm::mat4x4 &mat)
             : Transform(mat) {
+    }
+
+    [[nodiscard]] TransposeInverseWorldTransform transpose() const {
+        return TransposeInverseWorldTransform{glm::transpose(m_transform)};
     }
 };
 
