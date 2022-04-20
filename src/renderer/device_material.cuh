@@ -28,6 +28,10 @@ public:
 
     __device__ __host__ void set_reflectivity(float value) { m_reflectivity = value; }
 
+    [[nodiscard]] __device__ __host__ float translucence() const { return m_translucence; }
+
+    __device__ __host__ void set_translucence(float value) { m_translucence = value; }
+
     [[nodiscard]] __device__ __host__ glm::vec2 uv_scale() const { return m_uv_scale; }
 
     __device__ __host__ void set_uv_scale(const glm::vec2 &value) { m_uv_scale = value; }
@@ -44,6 +48,7 @@ private:
     DeviceTexture *m_roughness_map{}; // TODO: Implement support for 8bpp textures
     glm::vec3 m_emission{};
     float m_reflectivity{};
+    float m_translucence{};
     glm::vec2 m_uv_scale;
 };
 

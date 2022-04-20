@@ -122,11 +122,12 @@ __device__ float matte_brdf(const glm::vec3 &incoming, const ::glm::vec3 &outgoi
     return theta;
 }
 
-__device__ glm::vec3 generate_unit_vector_in_cone(const glm::vec3 &cone_direction, float cone_angle, RandomGenerator &random) {
+__device__ glm::vec3
+generate_unit_vector_in_cone(const glm::vec3 &cone_direction, float cone_angle, RandomGenerator &random) {
 
     // Find a tangent orthogonal to cone direction
     auto tangent = glm::vec3{1, 0, 0};
-    if(glm::dot(tangent, cone_direction) > 0.99f) {
+    if (glm::dot(tangent, cone_direction) > 0.99f) {
         tangent = glm::vec3{0, 0, 1};
     }
     tangent = glm::cross(cone_direction, tangent);
@@ -143,12 +144,13 @@ template<int N>
 __device__ glm::vec3
 trace_ray(const WorldSpaceRay &ray, Scene *scene, LightPath<N> &light_path, RandomGenerator &random, int depth) {
     if (depth == 0) {
-        return glm::vec3(0, 0, 0);
+        return glm::vec3(0, 0, 1);
     }
 
     Intersection intersection;
     SceneEntity *entity = nullptr;
     if (scene->intersect(ray, intersection, &entity)) {
+
         auto intersection_coordinate = ray.origin() + (ray.direction() * intersection.distance);
         auto &material = entity->mesh()->material();
         float w = 1.0f - intersection.u - intersection.v;
@@ -187,25 +189,32 @@ trace_ray(const WorldSpaceRay &ray, Scene *scene, LightPath<N> &light_path, Rand
 
         auto diffuse_color = material.sample_diffuse(texture_uv);
 
-
-        /*auto surface = light->get_random_emissive_surface(random);
-
-        auto shadow_ray = WorldSpaceRay{
-                intersection_coordinate + (world_space_normal * 0.1f),
-                glm::normalize(surface.world_coordinate - intersection_coordinate)
-        };
-
-        glm::vec3 incoming_light{};
-        Intersection shadow_intersection;
-        SceneEntity *shadow_entity;
-        if (scene->intersect(shadow_ray, shadow_intersection, &shadow_entity)) {
-            if (shadow_entity == light) {
-                incoming_light = glm::dot(world_space_normal, shadow_ray.direction()) *
-                                 shadow_entity->mesh()->material().emission();
+        if (material.translucence() > 0) {
+            auto theta = glm::dot(ray.direction(), world_space_normal);
+            auto next_refractive_index = 1.0f;
+            auto from_refractive_index = ray.refractive_index();
+            auto refraction_normal = world_space_normal;
+            if (theta > 0) {
+                // surface normal and ray pointing in same direction. We are entering vacuum.
+                refraction_normal = -refraction_normal;
+            } else {
+               //  return glm::vec3(1, 0, 1);
+                // We are entering some medium.
+                next_refractive_index = 1.333f; // TODO: MAterial should give refractive index
             }
-        }*/
 
-        glm::vec3 reflected_color{};
+            auto refracted_direction = glm::refract(ray.direction(), refraction_normal, from_refractive_index / next_refractive_index);
+
+            auto refracted_ray = WorldSpaceRay{
+                    intersection_coordinate + (refracted_direction * 0.1f),
+                    refracted_direction,
+                    next_refractive_index
+            };
+
+            auto refracted_color = trace_ray<N>(refracted_ray, scene, light_path, random, depth - 1);
+            diffuse_color = refracted_color * material.translucence();
+        }
+
         // auto reflectivity = material.reflectivity();
         // glm::vec3 reflectivityX;
         glm::vec3 reflectivity(material.reflectivity());
@@ -225,12 +234,12 @@ trace_ray(const WorldSpaceRay &ray, Scene *scene, LightPath<N> &light_path, Rand
                     reflected_direction
             };
 
-            reflected_color = trace_ray<N>(reflected_ray, scene, light_path, random, depth - 1);
+            auto reflected_color = trace_ray<N>(reflected_ray, scene, light_path, random, depth - 1);
             // diffuse_color = lerp(diffuse_color, reflected_color, reflectivity);
-            diffuse_color += reflected_color*(reflectivity);
+            diffuse_color += reflected_color * (reflectivity);
         }
 
-        glm::vec3 incoming_light{};
+        glm::vec3 incoming_light{1,1,1};
 
         for (auto i = 0; i < light_path.surface_count; ++i) {
             auto shadow_ray = WorldSpaceRay{
@@ -418,7 +427,7 @@ cudaRender(float *g_odata, Camera *camera, Scene *scene, RandomGeneratorPool *ra
 
         auto light_path = generate_light_path<PathLength>(scene, random);
 
-        auto color = trace_ray<PathLength>(ray, scene, light_path, random, 3);
+        auto color = trace_ray<PathLength>(ray, scene, light_path, random, 5);
 
         color = glm::clamp(color, {0, 0, 0}, {1, 1, 1});
 

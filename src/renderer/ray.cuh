@@ -27,31 +27,33 @@ typedef Ray<ObjectSpaceCoordinate> ObjectSpaceRay;*/
 
 class Ray {
 public:
-    DEVICE_FUNC Ray(const glm::vec3& origin, const glm::vec3& direction)
-            : m_origin(origin), m_direction(direction), m_inverse_direction({1.0f / direction.x, 1.0f / direction.y, 1.0f / direction.z}) {
+    DEVICE_FUNC Ray(const glm::vec3& origin, const glm::vec3& direction, float refractive_index)
+            : m_origin(origin), m_direction(direction), m_inverse_direction({1.0f / direction.x, 1.0f / direction.y, 1.0f / direction.z}), m_refractive_index(refractive_index) {
 
     }
 
     [[nodiscard]] DEVICE_FUNC const glm::vec3& origin() const { return m_origin; }
     [[nodiscard]] DEVICE_FUNC const glm::vec3& direction() const { return m_direction; }
     [[nodiscard]] DEVICE_FUNC const glm::vec3& inverse_direction() const { return m_inverse_direction; }
+    [[nodiscard]] DEVICE_FUNC const float refractive_index() const { return m_refractive_index; }
 protected:
     glm::vec3 m_origin;
     glm::vec3 m_direction;
     glm::vec3 m_inverse_direction;
+    float m_refractive_index;
 };
 
 class ObjectSpaceRay : public Ray {
 public:
-    DEVICE_FUNC ObjectSpaceRay(const glm::vec3& origin, const glm::vec3& direction)
-            : Ray(origin, direction) {
+    DEVICE_FUNC ObjectSpaceRay(const glm::vec3& origin, const glm::vec3& direction, float refractive_index = 1.0f)
+            : Ray(origin, direction, refractive_index) {
     }
 };
 
 class WorldSpaceRay : public Ray {
 public:
-    DEVICE_FUNC WorldSpaceRay(const glm::vec3& origin, const glm::vec3& direction)
-            : Ray(origin, direction) {
+    DEVICE_FUNC WorldSpaceRay(const glm::vec3& origin, const glm::vec3& direction, float refractive_index = 1.0f)
+            : Ray(origin, direction, refractive_index) {
     }
 
     [[nodiscard]] DEVICE_FUNC ObjectSpaceRay to_object_space_ray(const InverseWorldTransform& transform) const {
