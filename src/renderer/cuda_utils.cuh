@@ -19,7 +19,7 @@ void transfer_vector_to_device_memory(const std::vector<T>& items, T** device_me
 template<typename T, typename... Args>
 T *create_device_type(Args &&... args) {
     T *object;
-    cudaMallocManaged(&object, sizeof(T));
+    cuda_assert(cudaMallocManaged(&object, sizeof(T)));
     return new(object) T(std::forward<Args>(args)...);
 }
 

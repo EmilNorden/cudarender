@@ -7,6 +7,7 @@ struct SurfaceDescription {
     IndexedDeviceMesh *mesh;
     glm::vec3 world_coordinate;
     glm::vec3 world_normal;
+    glm::vec3 emission;
 };
 
 #endif

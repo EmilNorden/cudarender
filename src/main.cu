@@ -228,7 +228,74 @@ void set_camera_direction(Camera *camera, float yaw, float pitch) {
     camera->set_direction(get_forward(final_rotation));
 }
 
-void scene_house(DeviceMeshLoader& mesh_loader, DeviceMaterialLoader& material_loader, DeviceTextureLoader& texture_loader, std::vector<SceneEntity>& entities) {
+void
+scene_dragon(DeviceMeshLoader &mesh_loader, DeviceMaterialLoader &material_loader, DeviceTextureLoader &texture_loader,
+             std::vector<SceneEntity> &entities) {
+    // MATERIALS
+    auto grass = material_loader.load("/home/emil/textures/Grass001_4K-JPG/");
+    grass.set_uv_scale({100.0, 100.0});
+
+    auto marble = material_loader.load("/home/emil/textures/Marble012_4K-JPG/");
+
+    // MESHES
+    auto light_mesh = mesh_loader.load("/home/emil/models/crate/crate1.obj");
+
+    auto box = mesh_loader.load("/home/emil/models/crate/crate1.obj");
+    box[0]->set_material(marble);
+
+    auto floor_mesh = mesh_loader.load("/home/emil/models/crate/crate1.obj");
+    floor_mesh[0]->set_material(grass);
+
+    auto house = mesh_loader.load("/home/emil/models/house1/black_smith.obj");
+    house[0]->material().set_reflectivity(0.5f);
+
+    /*auto dragon = mesh_loader.load("/home/emil/models/stanford_dragon/dragon.obj");
+    dragon[0]->set_material(marble);*/
+
+    light_mesh[0]->material().set_emission(glm::vec3(1.0, 1.0, 1.0) * 2.0f);
+
+    // ENTITIES
+    entities.emplace_back(light_mesh[0],
+                          WorldTransformBuilder()
+                                  .with_translation({0.0, 300.0, 0.0})
+                                  .with_scale({10.0, 0.1f, 10.0f})
+                                  .build());
+
+    entities.emplace_back(
+            floor_mesh[0],
+            WorldTransformBuilder()
+                    .with_translation({0.0, 0.0, 0.0})
+                    .with_scale({100.0, 0.001, 100.0})
+                    .build());
+
+    /*entities.emplace_back(
+            box[0],
+            WorldTransformBuilder()
+                    .with_translation({0.0, 0.0, 0.0})
+                    .with_scale({1.0, 1.0, 1.0})
+                    .build());*/
+
+    entities.emplace_back(
+            house[0],
+            WorldTransformBuilder()
+                    .with_translation({0.0, 0.0, 0.0})
+                    .with_object_space_translation({0.0, 0.827, 0.0})
+                    .with_scale({40.0, 40.0, 40.0})
+                    .build());
+
+
+    /*entities.emplace_back(
+            dragon[0],
+            WorldTransformBuilder()
+                    .with_translation({0.0, 0.0, 0.0})
+                    .with_scale({30.0, 30.0, 30.0})
+                    .build());*/
+}
+
+
+void
+scene_house(DeviceMeshLoader &mesh_loader, DeviceMaterialLoader &material_loader, DeviceTextureLoader &texture_loader,
+            std::vector<SceneEntity> &entities) {
     auto light_mesh = mesh_loader.load("/home/emil/models/crate/crate1.obj");
     light_mesh[0]->material().set_emission(glm::vec3(1.0, 1.0, 1.0));
     entities.emplace_back(light_mesh[0],
@@ -238,16 +305,18 @@ void scene_house(DeviceMeshLoader& mesh_loader, DeviceMaterialLoader& material_l
                                   .build());
 
     auto house = mesh_loader.load("/home/emil/models/house1/black_smith.obj");
+
     entities.emplace_back(
             house[0],
             WorldTransformBuilder()
-                    .with_translation({0.0, 90.0, 0.0})
-                    .with_uniform_scale(100.0f)
+                    .with_translation({0.0, 248.1, 0.0})
+                    .with_uniform_scale(300.0f)
                     .build()
     );
 
     auto floor_mesh = mesh_loader.load("/home/emil/models/crate/crate1.obj");
     auto grass = material_loader.load("/home/emil/textures/Grass001_4K-JPG/");
+    grass.set_uv_scale({100.0, 100.0});
     floor_mesh[0]->set_material(grass);
     entities.emplace_back(
             floor_mesh[0],
@@ -258,7 +327,8 @@ void scene_house(DeviceMeshLoader& mesh_loader, DeviceMaterialLoader& material_l
     );
 }
 
-void scene_wall_lamps(DeviceMeshLoader& mesh_loader, DeviceMaterialLoader& material_loader, DeviceTextureLoader& texture_loader, std::vector<SceneEntity>& entities) {
+void scene_wall_lamps(DeviceMeshLoader &mesh_loader, DeviceMaterialLoader &material_loader,
+                      DeviceTextureLoader &texture_loader, std::vector<SceneEntity> &entities) {
     auto wall_material = material_loader.load("/home/emil/textures/Bricks059_4K-JPG/");
     wall_material.set_uv_scale(glm::vec2(4.0f, 4.0f));
     // auto wood_material = material_loader.load("/home/emil/textures/WoodFloor043_4K-JPG/");
@@ -266,7 +336,6 @@ void scene_wall_lamps(DeviceMeshLoader& mesh_loader, DeviceMaterialLoader& mater
 
     auto nvidia_texture = texture_loader.load("/home/emil/textures/nvidia/color.png");
     auto black_mat = material_loader.load("/home/emil/textures/black/");
-
 
 
     auto wall_lamp = mesh_loader.load("/home/emil/models/wall_lamp/lamp.obj");
@@ -364,7 +433,7 @@ void scene_wall_lamps(DeviceMeshLoader& mesh_loader, DeviceMaterialLoader& mater
                     .with_scale({10.0, 0.1, 10.0})
                     .build()
     );
-    for(int i = 0; i < 4; ++i) {
+    for (int i = 0; i < 4; ++i) {
         entities.emplace_back(
                 wall_lamp[i],
                 WorldTransformBuilder()
@@ -385,7 +454,7 @@ void scene_wall_lamps(DeviceMeshLoader& mesh_loader, DeviceMaterialLoader& mater
                     .with_scale({10.0, 0.1, 10.0})
                     .build()
     );
-    for(int i = 0; i < 4; ++i) {
+    for (int i = 0; i < 4; ++i) {
         entities.emplace_back(
                 wall_lamp[i],
                 WorldTransformBuilder()
@@ -406,7 +475,7 @@ void scene_wall_lamps(DeviceMeshLoader& mesh_loader, DeviceMaterialLoader& mater
                     .with_scale({10.0, 0.1, 10.0})
                     .build()
     );
-    for(int i = 0; i < 4; ++i) {
+    for (int i = 0; i < 4; ++i) {
         entities.emplace_back(
                 wall_lamp[i],
                 WorldTransformBuilder()
@@ -428,7 +497,7 @@ void scene_wall_lamps(DeviceMeshLoader& mesh_loader, DeviceMaterialLoader& mater
                     .build()
     );
 
-    for(int i = 0; i < 4; ++i) {
+    for (int i = 0; i < 4; ++i) {
         entities.emplace_back(
                 wall_lamp[i],
                 WorldTransformBuilder()
@@ -457,7 +526,7 @@ int main() {
     float rot = 1.45f;
     //auto camera_position = glm::vec3(glm::cos(rot) * 10.0, 0.0000, glm::sin(rot) * 10.0f);
     // auto camera_position = glm::vec3(90.0, 100.0, 200.0);
-    auto camera_position = glm::vec3(0.0, 100.0, -100.0);
+    auto camera_position = glm::vec3(0.0, 100.0, 400.0);
     auto camera_direction = glm::normalize(glm::vec3(0.0, 100.0, -300.0f) - camera_position);
     camera->set_position(camera_position);
     camera->set_direction(camera_direction);
@@ -481,7 +550,7 @@ int main() {
     std::vector<SceneEntity> entities;
 
     // scene_wall_lamps(mesh_loader, material_loader, texture_loader, entities);
-    scene_house(mesh_loader, material_loader, texture_loader, entities);
+    scene_dragon(mesh_loader, material_loader, texture_loader, entities);
 
     Scene *scene;
     cudaMallocManaged(&scene, sizeof(Scene));
@@ -489,7 +558,7 @@ int main() {
     scene->build(entities);
 
     std::cout << "Creating random states..." << std::flush;
-    auto random = create_device_type<RandomGeneratorPool>(2048 * 256, 123);
+    auto random = create_device_type<RandomGeneratorPool>(2048 * 256, 682856);
     std::cout << "Done." << std::endl;
     double rotation = 0.0;
     double total_duration = 0.0f;
@@ -522,7 +591,7 @@ int main() {
             sample = 0;
         }
 
-        if(glfwGetKey(window.handle(), GLFW_KEY_Y)) {
+        if (glfwGetKey(window.handle(), GLFW_KEY_Y)) {
             sample = 0;
         }
 
@@ -543,7 +612,7 @@ int main() {
             cursor_y = current_cursor_y;
         }
 
-        if(needs_autofocus) {
+        if (needs_autofocus) {
             needs_autofocus = false;
             device_autofocus(camera, scene, WIDTH, HEIGHT);
         }
@@ -576,6 +645,9 @@ int main() {
         rotation += frame_duration.count() * 0.0005;
 
         check_for_gl_errors();
+        /*if (sample > 3) {
+            run = false;
+        }*/
     }
 
     cudaFree(camera);

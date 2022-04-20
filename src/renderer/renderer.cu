@@ -113,7 +113,7 @@ struct LightPath {
 __device__ float matte_brdf(const glm::vec3 &incoming, const ::glm::vec3 &outgoing, const glm::vec3 &surface_normal) {
     auto half = (incoming + outgoing) / 2.0f;
     auto theta = glm::dot(surface_normal, half);
-    if(theta < 0) {
+    if (theta < 0) {
         return 0;
     }
 
@@ -170,26 +170,11 @@ trace_ray(const WorldSpaceRay &ray, Scene *scene, LightPath<N> &light_path, Rand
 
         // return world_space_normal;
 
-        /*glm::vec3 reflected_color{};
-        if (material.reflectivity() > 0.0f) {
-            auto reflected_direction = glm::reflect(ray.direction(), world_space_normal);
-
-            auto reflected_ray = WorldSpaceRay{
-                    intersection_coordinate,
-                    reflected_direction
-            };
-
-            reflected_color = trace_ray(reflected_ray, scene, random, depth - 1);
-        }*/
 
 
         auto diffuse_color = entity->mesh()->material().sample_diffuse(
                 texture_uv); // glm::vec3(0.0f, 1.0f, 0.0f);
-
-        auto light = scene->get_random_emissive_entity(random);
-        if (light == entity) {
-            return material.emission(); // We cant contribute to ourselves. Just return emission
-        }
+                
 
         /*auto surface = light->get_random_emissive_surface(random);
 
@@ -209,8 +194,7 @@ trace_ray(const WorldSpaceRay &ray, Scene *scene, LightPath<N> &light_path, Rand
         }*/
         glm::vec3 incoming_light{};
 
-        //for (auto i = 0; i < 1; ++i) {
-        for (auto i = 0; i < light_path.surface_count; ++i) { // Uncomment for ugly indirect light
+        for (auto i = 0; i < light_path.surface_count; ++i) {
             auto shadow_ray = WorldSpaceRay{
                     intersection_coordinate + (world_space_normal * 0.1f),
                     glm::normalize(light_path.surfaces[i].world_coordinate - intersection_coordinate)
@@ -220,14 +204,18 @@ trace_ray(const WorldSpaceRay &ray, Scene *scene, LightPath<N> &light_path, Rand
             SceneEntity *shadow_entity;
             if (scene->intersect(shadow_ray, shadow_intersection, &shadow_entity)) {
                 if (shadow_entity == light_path.surfaces[i].entity) {
+                    auto theta = glm::dot(shadow_ray.direction(), world_space_normal);
+                    if(theta < 0) {
+                        theta = 0;
+                    }
                     if (i == 0) {
-                        incoming_light += light_path.surfaces[i].emission;
+                        incoming_light += light_path.surfaces[i].emission * theta;
                     } else {
                         auto brdf_light = matte_brdf(light_path.surfaces[i].incoming_direction,
                                                      shadow_ray.direction() * -1.0f,
                                                      light_path.surfaces[i].world_space_normal) *
                                           light_path.surfaces[i].incoming_emission;
-                       incoming_light += brdf_light;
+                        incoming_light += brdf_light * theta;
                     }
                     // incoming_light += light_path.surfaces[i].emission;
 
@@ -251,14 +239,21 @@ __device__ LightPath<N> generate_light_path(Scene *scene, RandomGenerator &rando
 
     auto light = scene->get_random_emissive_entity(random);
     auto surface = light->get_random_emissive_surface(random);
+    /*if(surface.world_normal.y < -0.5) {
+        printf("%f;%f\n", surface.world_coordinate.x, surface.world_coordinate.z);
+    }*/
+    /*printf("surface: %f %f %f -- %f %f %f\n", surface.world_coordinate.x, surface.world_coordinate.y, surface.world_coordinate.z,
+           surface.world_normal.x, surface.world_normal.y, surface.world_normal.z);*/
 
     result.surfaces[0].world_space_normal = surface.world_normal;
     result.surfaces[0].world_coordinate = surface.world_coordinate;
-    result.surfaces[0].emission = surface.mesh->material().emission(); // TODO: Should this be emission in the direction of the next surface?
+    result.surfaces[0].emission = surface.emission; // TODO: Should this be emission in the direction of the next surface?
     result.surfaces[0].entity = light;
     result.surfaces[0].roughness = 1.0f;
     result.surfaces[0].incoming_emission = glm::vec3(0.0, 0.0, 0.0);
     result.surface_count = 1;
+
+    glm::vec3 path_direction = geom::random_unit_in_hemisphere(surface.world_normal, random);
 
     for (result.surface_count = 1; result.surface_count < N; ++result.surface_count) {
         auto &previous_surface = result.surfaces[result.surface_count - 1];
@@ -272,16 +267,7 @@ __device__ LightPath<N> generate_light_path(Scene *scene, RandomGenerator &rando
 
         }*/
 
-        glm::vec3 path_direction = geom::random_unit_in_hemisphere(previous_surface.world_space_normal, random);
-        /*if (result.surface_count == 1) {
-            direction = geom::random_unit_in_hemisphere(result.surfaces[result.surface_count - 1].world_space_normal,
-                                                        random);
-        } else {
-            auto reflected_direction = glm::reflect(result.surfaces[result.surface_count - 1].incoming_direction,
-                                                    result.surfaces[result.surface_count - 1].world_space_normal);
-            direction = geom::random_unit_in_cone(reflected_direction, result.surfaces[result.surface_count - 1].roughness * glm::pi<float>(), random);
-        }*/
-
+        // glm::vec3 path_direction = geom::random_unit_in_hemisphere(previous_surface.world_space_normal, random);
 
         auto path_ray = WorldSpaceRay{
                 previous_surface.world_coordinate + (path_direction * 0.1f),
@@ -363,6 +349,8 @@ __device__ LightPath<N> generate_light_path(Scene *scene, RandomGenerator &rando
         }
         current_surface.incoming_emission *= diffuse;
         current_surface.entity = entity;
+
+        path_direction = glm::reflect(path_direction, current_surface.world_space_normal);
     }
 
     return result;
@@ -371,6 +359,8 @@ __device__ LightPath<N> generate_light_path(Scene *scene, RandomGenerator &rando
 __global__ void
 cudaRender(float *g_odata, Camera *camera, Scene *scene, RandomGeneratorPool *random_pool, int width, int height,
            size_t sample) {
+    constexpr int PathLength = 1;
+
     int tx = threadIdx.x;
     int ty = threadIdx.y;
     int bw = blockDim.x;
@@ -388,9 +378,9 @@ cudaRender(float *g_odata, Camera *camera, Scene *scene, RandomGeneratorPool *ra
     if (x < width && y < height) {
         auto ray = camera->cast_perturbed_ray(x, y, random);
 
-        auto light_path = generate_light_path<2>(scene, random);
+        auto light_path = generate_light_path<PathLength>(scene, random);
 
-        auto color = trace_ray<2>(ray, scene, light_path, random, 3);
+        auto color = trace_ray<PathLength>(ray, scene, light_path, random, 3);
 
         color = glm::clamp(color, {0, 0, 0}, {1, 1, 1});
 
