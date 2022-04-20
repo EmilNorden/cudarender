@@ -232,6 +232,9 @@ void
 scene_dragon(DeviceMeshLoader &mesh_loader, DeviceMaterialLoader &material_loader, DeviceTextureLoader &texture_loader,
              std::vector<SceneEntity> &entities) {
     // MATERIALS
+    auto paving_stones = material_loader.load("/home/emil/textures/PavingStones115C_4K-JPG/");
+    paving_stones.set_uv_scale({300.0, 300.0});
+
     auto grass = material_loader.load("/home/emil/textures/Grass001_4K-JPG/");
     grass.set_uv_scale({100.0, 100.0});
 
@@ -244,10 +247,10 @@ scene_dragon(DeviceMeshLoader &mesh_loader, DeviceMaterialLoader &material_loade
     box[0]->set_material(marble);
 
     auto floor_mesh = mesh_loader.load("/home/emil/models/crate/crate1.obj");
-    floor_mesh[0]->set_material(grass);
+    floor_mesh[0]->set_material(paving_stones);
 
     auto house = mesh_loader.load("/home/emil/models/house1/black_smith.obj");
-    house[0]->material().set_reflectivity(0.5f);
+    // house[0]->material().set_reflectivity(0.5f);
 
     /*auto dragon = mesh_loader.load("/home/emil/models/stanford_dragon/dragon.obj");
     dragon[0]->set_material(marble);*/

@@ -16,6 +16,8 @@
 #include "device_random.cuh"
 #include "transform.cuh"
 #include "geometry_helpers.cuh"
+#include <glm/glm.hpp>
+#include <glm/gtx/rotate_vector.hpp>
 
 cudaError_t cuda();
 
@@ -120,6 +122,23 @@ __device__ float matte_brdf(const glm::vec3 &incoming, const ::glm::vec3 &outgoi
     return theta;
 }
 
+__device__ glm::vec3 generate_unit_vector_in_cone(const glm::vec3 &cone_direction, float cone_angle, RandomGenerator &random) {
+
+    // Find a tangent orthogonal to cone direction
+    auto tangent = glm::vec3{1, 0, 0};
+    if(glm::dot(tangent, cone_direction) > 0.99f) {
+        tangent = glm::vec3{0, 0, 1};
+    }
+    tangent = glm::cross(cone_direction, tangent);
+
+    // Now that we have an orthogonal tangent. Rotate it a random direction around
+    // The cone direction.
+    tangent = glm::rotate(tangent, random.value() * glm::two_pi<float>(), cone_direction);
+
+    // Now, rotate cone_direction around the tangent :)
+    return glm::rotate(cone_direction, (1.0f - (random.value() * 2.0f)) * cone_angle, tangent);
+}
+
 template<int N>
 __device__ glm::vec3
 trace_ray(const WorldSpaceRay &ray, Scene *scene, LightPath<N> &light_path, RandomGenerator &random, int depth) {
@@ -172,9 +191,8 @@ trace_ray(const WorldSpaceRay &ray, Scene *scene, LightPath<N> &light_path, Rand
 
 
 
-        auto diffuse_color = entity->mesh()->material().sample_diffuse(
-                texture_uv); // glm::vec3(0.0f, 1.0f, 0.0f);
-                
+        auto diffuse_color = material.sample_diffuse(texture_uv);
+
 
         /*auto surface = light->get_random_emissive_surface(random);
 
@@ -192,6 +210,28 @@ trace_ray(const WorldSpaceRay &ray, Scene *scene, LightPath<N> &light_path, Rand
                                  shadow_entity->mesh()->material().emission();
             }
         }*/
+
+        glm::vec3 reflected_color{};
+        auto reflectivity = material.reflectivity();
+        if (material.has_roughness_map()) {
+            reflectivity += 1.0f - material.sample_roughness(texture_uv).x;
+        }
+
+        if (reflectivity > 0.0f) {
+            auto reflected_direction = glm::reflect(ray.direction(), world_space_normal);
+            auto cone_angle = (1.0f - reflectivity) * glm::pi<float>();
+
+            reflected_direction = generate_unit_vector_in_cone(reflected_direction, cone_angle, random);
+
+            auto reflected_ray = WorldSpaceRay{
+                    intersection_coordinate,
+                    reflected_direction
+            };
+
+            reflected_color = trace_ray<N>(reflected_ray, scene, light_path, random, depth - 1);
+            diffuse_color = lerp(diffuse_color, reflected_color, reflectivity);
+        }
+
         glm::vec3 incoming_light{};
 
         for (auto i = 0; i < light_path.surface_count; ++i) {
@@ -205,7 +245,7 @@ trace_ray(const WorldSpaceRay &ray, Scene *scene, LightPath<N> &light_path, Rand
             if (scene->intersect(shadow_ray, shadow_intersection, &shadow_entity)) {
                 if (shadow_entity == light_path.surfaces[i].entity) {
                     auto theta = glm::dot(shadow_ray.direction(), world_space_normal);
-                    if(theta < 0) {
+                    if (theta < 0) {
                         theta = 0;
                     }
                     if (i == 0) {

@@ -30,6 +30,12 @@ DeviceTexture *DeviceTextureLoader::load(const std::string &path) {
     FIBITMAP *bitmap = FreeImage_Load(type, path.c_str());
     auto width = FreeImage_GetWidth(bitmap);
     auto height = FreeImage_GetHeight(bitmap);
+    auto bpp = FreeImage_GetBPP(bitmap);
+    if(bpp != 24) {
+        auto new_bitmap = FreeImage_ConvertTo24Bits(bitmap);
+        FreeImage_Unload(bitmap);
+        bitmap = new_bitmap;
+    }
     std::vector <uint8_t> pixels;
     pixels.reserve(3 * width * height);
     for (auto y = 0; y < height; ++y) {
