@@ -76,6 +76,7 @@ hit_triangle(const ObjectSpaceRay &ray, glm::vec3 v1, glm::vec3 v2, glm::vec3 v3
     // Find vectors for two edges sharing V1
     glm::vec3 e1 = v2 - v1;
     glm::vec3 e2 = v3 - v1;
+
     // Begin calculating determinant - also used to calculate u parameter
     glm::vec3 P = glm::cross(ray.direction(), e2); // m_direction.cross(e2);
     // if determinant is near zero, ray lies in plane of triangle
@@ -137,7 +138,7 @@ __host__ IndexedDeviceMesh::IndexedDeviceMesh(const std::vector<glm::vec3> &vert
                                               const std::vector<TriangleFace> &faces,
                                               const std::vector<glm::vec2> &tex_coords,
                                               const DeviceMaterial &material)
-        : m_bounds(vertices), m_material(material) {
+        : m_bounds(vertices, 0.01f), m_material(material) {
 
     cuda_assert(cudaMallocManaged(&m_vertices, sizeof(glm::vec3) * vertices.size()));
     cuda_assert(cudaMemcpy(m_vertices, vertices.data(), sizeof(glm::vec3) * vertices.size(), cudaMemcpyHostToDevice));

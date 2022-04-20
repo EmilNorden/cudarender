@@ -13,7 +13,7 @@ public:
 
     }
 
-    __host__ AABB(const std::vector<glm::vec3>& points) {
+    __host__ AABB(const std::vector<glm::vec3>& points, float padding = 0.0f) {
         if(points.empty()) {
             throw std::runtime_error{"Cannot create AABB from empty vector"};
         }
@@ -25,6 +25,9 @@ public:
             m_min = glm::min(m_min, point);
             m_max = glm::max(m_max, point);
         }
+
+        m_min -= glm::vec3{padding};
+        m_max += glm::vec3{padding};
     }
 
     __host__ __device__ const glm::vec3& min() const { return m_min; }
