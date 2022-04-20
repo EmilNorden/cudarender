@@ -206,14 +206,17 @@ trace_ray(const WorldSpaceRay &ray, Scene *scene, LightPath<N> &light_path, Rand
         }*/
 
         glm::vec3 reflected_color{};
-        auto reflectivity = material.reflectivity();
+        // auto reflectivity = material.reflectivity();
+        // glm::vec3 reflectivityX;
+        glm::vec3 reflectivity(material.reflectivity());
         if (material.has_roughness_map()) {
-            reflectivity += 1.0f - material.sample_roughness(texture_uv).x;
+            reflectivity += glm::vec3(1.0) - material.sample_roughness(texture_uv);
+            // reflectivity += 1.0f - material.sample_roughness(texture_uv).x;
         }
 
-        if (reflectivity > 0.0f) {
+        if (reflectivity.x > 0 || reflectivity.y > 0 || reflectivity.z > 0) {
             auto reflected_direction = glm::reflect(ray.direction(), world_space_normal);
-            auto cone_angle = (1.0f - reflectivity) * glm::pi<float>();
+            auto cone_angle = (1.0f - reflectivity.x) * glm::pi<float>();
 
             reflected_direction = generate_unit_vector_in_cone(reflected_direction, cone_angle, random);
 
@@ -223,7 +226,8 @@ trace_ray(const WorldSpaceRay &ray, Scene *scene, LightPath<N> &light_path, Rand
             };
 
             reflected_color = trace_ray<N>(reflected_ray, scene, light_path, random, depth - 1);
-            diffuse_color = lerp(diffuse_color, reflected_color, reflectivity);
+            // diffuse_color = lerp(diffuse_color, reflected_color, reflectivity);
+            diffuse_color += reflected_color*(reflectivity);
         }
 
         glm::vec3 incoming_light{};
@@ -393,7 +397,7 @@ __device__ LightPath<N> generate_light_path(Scene *scene, RandomGenerator &rando
 __global__ void
 cudaRender(float *g_odata, Camera *camera, Scene *scene, RandomGeneratorPool *random_pool, int width, int height,
            size_t sample) {
-    constexpr int PathLength = 1;
+    constexpr int PathLength = 2;
 
     int tx = threadIdx.x;
     int ty = threadIdx.y;

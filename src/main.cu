@@ -232,6 +232,8 @@ void
 scene_dragon(DeviceMeshLoader &mesh_loader, DeviceMaterialLoader &material_loader, DeviceTextureLoader &texture_loader,
              std::vector<SceneEntity> &entities) {
     // MATERIALS
+    auto nvidia = material_loader.load("/home/emil/textures/nvidia/");
+    nvidia.set_uv_scale({-300.0, 300.0});
     auto paving_stones = material_loader.load("/home/emil/textures/PavingStones115C_4K-JPG/");
     paving_stones.set_uv_scale({300.0, 300.0});
 
@@ -247,13 +249,16 @@ scene_dragon(DeviceMeshLoader &mesh_loader, DeviceMaterialLoader &material_loade
     box[0]->set_material(marble);
 
     auto floor_mesh = mesh_loader.load("/home/emil/models/crate/crate1.obj");
-    floor_mesh[0]->set_material(paving_stones);
+    floor_mesh[0]->set_material(nvidia);
 
-    auto house = mesh_loader.load("/home/emil/models/house1/black_smith.obj");
+    // auto house = mesh_loader.load("/home/emil/models/house1/black_smith.obj");
     // house[0]->material().set_reflectivity(0.5f);
 
-    /*auto dragon = mesh_loader.load("/home/emil/models/stanford_dragon/dragon.obj");
-    dragon[0]->set_material(marble);*/
+    auto dragon = mesh_loader.load("/home/emil/models/stanford_dragon/dragon.obj");
+    marble.set_normal_map(nullptr);
+    marble.set_roughness_map(nullptr);
+    marble.set_reflectivity(1.0f);
+    dragon[0]->set_material(marble);
 
     light_mesh[0]->material().set_emission(glm::vec3(1.0, 1.0, 1.0) * 2.0f);
 
@@ -272,27 +277,29 @@ scene_dragon(DeviceMeshLoader &mesh_loader, DeviceMaterialLoader &material_loade
                     .build());
 
     /*entities.emplace_back(
-            box[0],
-            WorldTransformBuilder()
-                    .with_translation({0.0, 0.0, 0.0})
-                    .with_scale({1.0, 1.0, 1.0})
-                    .build());*/
-
-    entities.emplace_back(
             house[0],
             WorldTransformBuilder()
                     .with_translation({0.0, 0.0, 0.0})
                     .with_object_space_translation({0.0, 0.827, 0.0})
                     .with_scale({40.0, 40.0, 40.0})
-                    .build());
+                    .build());*/
 
 
-    /*entities.emplace_back(
+
+    entities.emplace_back(
             dragon[0],
             WorldTransformBuilder()
                     .with_translation({0.0, 0.0, 0.0})
-                    .with_scale({30.0, 30.0, 30.0})
+                    .with_scale({3.0, 3.0, 3.0})
+                    .build());
+
+    /*entities.emplace_back(
+            box[0],
+            WorldTransformBuilder()
+                    .with_translation({0.0, 0.0, 0.0})
+                    .with_scale({0.6, 0.6, 0.6})
                     .build());*/
+
 }
 
 
