@@ -231,75 +231,48 @@ void set_camera_direction(Camera *camera, float yaw, float pitch) {
 void
 scene_dragon(DeviceMeshLoader &mesh_loader, DeviceMaterialLoader &material_loader, DeviceTextureLoader &texture_loader,
              std::vector<SceneEntity> &entities) {
-    // MATERIALS
-    auto nvidia = material_loader.load("/home/emil/textures/nvidia/");
-    nvidia.set_uv_scale({-300.0, 300.0});
-    auto paving_stones = material_loader.load("/home/emil/textures/PavingStones115C_4K-JPG/");
-    paving_stones.set_uv_scale({300.0, 300.0});
+    /*auto interior = mesh_loader.load("/home/emil/models/Stockholm_interior_OBJ/Stockholm_interior.obj");
 
-    auto grass = material_loader.load("/home/emil/textures/Grass001_4K-JPG/");
-    grass.set_uv_scale({100.0, 100.0});
-
-    auto marble = material_loader.load("/home/emil/textures/Marble012_4K-JPG/");
-
-    // MESHES
-    auto light_mesh = mesh_loader.load("/home/emil/models/crate/crate1.obj");
-
-    auto box = mesh_loader.load("/home/emil/models/crate/crate1.obj");
-    box[0]->set_material(marble);
-
-    auto floor_mesh = mesh_loader.load("/home/emil/models/crate/crate1.obj");
-    floor_mesh[0]->set_material(nvidia);
-
-    // auto house = mesh_loader.load("/home/emil/models/house1/black_smith.obj");
-    // house[0]->material().set_reflectivity(0.5f);
-
+    entities.emplace_back(interior[0],
+                          WorldTransformBuilder()
+                                  .with_translation({0.0, 0.0, 0.0})
+                                  .with_scale({1.0, 0.1f, 1.0f})
+                                  .build());*/
+    auto paper_material = material_loader.load("/home/emil/textures/Marble012_4K-JPG/");
     auto dragon = mesh_loader.load("/home/emil/models/stanford_dragon/dragon.obj");
-    marble.set_normal_map(nullptr);
-    marble.set_roughness_map(nullptr);
-    marble.set_reflectivity(1.0f);
-    dragon[0]->set_material(marble);
+    // paper_material.set_roughness_map(nullptr);
+    paper_material.set_normal_map(nullptr);
+    dragon[0]->set_material(paper_material);
 
-    light_mesh[0]->material().set_emission(glm::vec3(1.0, 1.0, 1.0) * 2.0f);
-
-    // ENTITIES
+    auto light_mesh = mesh_loader.load("/home/emil/models/crate/crate1.obj");
+    light_mesh[0]->material().set_emission(glm::vec3(1.0, 1.0, 1.0));
     entities.emplace_back(light_mesh[0],
                           WorldTransformBuilder()
-                                  .with_translation({0.0, 300.0, 0.0})
-                                  .with_scale({10.0, 0.1f, 10.0f})
+                                  .with_translation({200.0, 1000.0, 0.0})
+                                  .with_scale({1.0, 0.1f, 1.0f})
                                   .build());
 
+    auto floor_mesh = mesh_loader.load("/home/emil/models/crate/crate1.obj");
+    auto grass = material_loader.load("/home/emil/textures/Grass001_4K-JPG/");
+    grass.set_uv_scale({100.0, 100.0});
+    grass.set_normal_map(nullptr);
+    grass.set_roughness_map(nullptr);
+    floor_mesh[0]->set_material(grass);
     entities.emplace_back(
             floor_mesh[0],
             WorldTransformBuilder()
                     .with_translation({0.0, 0.0, 0.0})
-                    .with_scale({100.0, 0.001, 100.0})
-                    .build());
-
-    /*entities.emplace_back(
-            house[0],
-            WorldTransformBuilder()
-                    .with_translation({0.0, 0.0, 0.0})
-                    .with_object_space_translation({0.0, 0.827, 0.0})
-                    .with_scale({40.0, 40.0, 40.0})
-                    .build());*/
-
-
+                    .with_scale({100.0, 0.1, 100.0})
+                    .build()
+    );
 
     entities.emplace_back(
             dragon[0],
             WorldTransformBuilder()
-                    .with_translation({0.0, 0.0, 0.0})
-                    .with_scale({3.0, 3.0, 3.0})
-                    .build());
-
-    /*entities.emplace_back(
-            box[0],
-            WorldTransformBuilder()
-                    .with_translation({0.0, 0.0, 0.0})
-                    .with_scale({0.6, 0.6, 0.6})
-                    .build());*/
-
+                    .with_translation({0.0, 0.0, -300})
+                    .with_uniform_scale(20.0f)
+                    .build()
+    );
 }
 
 
@@ -566,6 +539,9 @@ int main() {
     cudaMallocManaged(&scene, sizeof(Scene));
     new(scene) Scene;
     scene->build(entities);
+
+    auto sky = texture_loader.load("/home/emil/textures/sky.png");
+    scene->set_sky_texture(sky);
 
     std::cout << "Creating random states..." << std::flush;
     auto random = create_device_type<RandomGeneratorPool>(2048 * 256, 682856);

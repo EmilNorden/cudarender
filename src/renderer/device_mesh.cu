@@ -130,7 +130,6 @@ hit_triangle(const ObjectSpaceRay &ray, glm::vec3 v1, glm::vec3 v2, glm::vec3 v3
 }
 
 
-
 __host__ IndexedDeviceMesh::IndexedDeviceMesh(const std::vector<glm::vec3> &vertices,
                                               const std::vector<glm::vec3> &normals,
                                               const std::vector<glm::vec3> &tangents,
@@ -167,14 +166,13 @@ void IndexedDeviceMesh::build_node(TreeNode &node, std::vector<TriangleFace> &fa
     auto axis = static_cast<int>(current_axis);
 
     std::sort(faces.begin(), faces.end(), [&](const TriangleFace &a, const TriangleFace &b) {
-        // Just use the first vertex for each face.
-        // This is only used to find a suitable median position for the splitting plane.
-        // It determines how balanced our tree will be.
+        // Sort each face by comparing the center of the triangles.
+        // Previously I used the first vertex of each face but that didnt work out well.
 
-        auto a_v0 = m_vertices[a.i0];
-        auto b_v0 = m_vertices[b.i0];
+        auto a_mid_point = (m_vertices[a.i0] + m_vertices[a.i1] + m_vertices[a.i2]) / 3.0f;
+        auto b_mid_point = (m_vertices[b.i0] + m_vertices[b.i1] + m_vertices[b.i2]) / 3.0f;
 
-        return a_v0[axis] < b_v0[axis];
+        return a_mid_point[axis] < b_mid_point[axis];
     });
 
     auto half_size = faces.size() / 2;
@@ -192,7 +190,7 @@ void IndexedDeviceMesh::build_node(TreeNode &node, std::vector<TriangleFace> &fa
     left_side.reserve(half_size);
     right_side.reserve(half_size);
 
-    for (auto &face : faces) {
+    for (auto &face: faces) {
         auto v0 = m_vertices[face.i0];
         auto v1 = m_vertices[face.i1];
         auto v2 = m_vertices[face.i2];
@@ -343,11 +341,10 @@ IndexedDeviceMesh::intersect(const ObjectSpaceRay &ray, Intersection &intersecti
 [[nodiscard]] __device__ TriangleFace IndexedDeviceMesh::get_random_face(RandomGenerator &random) {
     TreeNode *current = m_root;
 
-    while(!is_leaf(current)) {
-        if(random.value() >= 0.5f) {
+    while (!is_leaf(current)) {
+        if (random.value() >= 0.5f) {
             current = current->left;
-        }
-        else {
+        } else {
             current = current->right;
         }
     }

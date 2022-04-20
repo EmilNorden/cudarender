@@ -239,7 +239,7 @@ trace_ray(const WorldSpaceRay &ray, Scene *scene, LightPath<N> &light_path, Rand
             diffuse_color += reflected_color * (reflectivity);
         }
 
-        glm::vec3 incoming_light{1,1,1};
+        glm::vec3 incoming_light{};
 
         for (auto i = 0; i < light_path.surface_count; ++i) {
             auto shadow_ray = WorldSpaceRay{
@@ -274,7 +274,12 @@ trace_ray(const WorldSpaceRay &ray, Scene *scene, LightPath<N> &light_path, Rand
         return material.emission() + (incoming_light * diffuse_color);
         // return material.emission() + (incoming_light * lerp(diffuse_color, reflected_color, material.reflectivity()));
     } else {
-        return glm::vec3(0, 0, 0);
+        if(scene->sky_texture() == nullptr) {
+            return {0, 0, 0};
+        }
+        auto pitch = glm::half_pi<float>() -  glm::asin(-ray.direction().y);
+        auto yaw = std::atan2(ray.direction().x, ray.direction().z);
+        return scene->sky_texture()->sample({yaw, pitch / glm::pi<float>()});
     }
 
 
@@ -427,7 +432,7 @@ cudaRender(float *g_odata, Camera *camera, Scene *scene, RandomGeneratorPool *ra
 
         auto light_path = generate_light_path<PathLength>(scene, random);
 
-        auto color = trace_ray<PathLength>(ray, scene, light_path, random, 5);
+        auto color = trace_ray<PathLength>(ray, scene, light_path, random, 3);
 
         color = glm::clamp(color, {0, 0, 0}, {1, 1, 1});
 

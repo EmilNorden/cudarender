@@ -100,7 +100,12 @@ public:
         return result_color;
     }
 
+    __device__ DeviceTexture* sky_texture() const { return m_sky_texture; }
+
+    __host__ void set_sky_texture(DeviceTexture *texture) { m_sky_texture = texture; }
+
 private:
+    DeviceTexture* m_sky_texture;
     SceneEntity *m_entities;
     size_t m_entity_count;
 
