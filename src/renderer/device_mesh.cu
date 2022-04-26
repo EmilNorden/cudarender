@@ -265,24 +265,23 @@ __device__ RangePlaneComparison
 CompareRangeWithPlane(const ObjectSpaceRay &ray, float tmin, float tmax, TreeNode *node) {
     auto axis = (int) node->splitting_axis;
     // TODO: Extract components before performing multiplication etc.
-    auto range_start = ray.origin() + (ray.direction() * tmin);
-    auto range_end = ray.origin() + (ray.direction() * tmax);
+    auto range_start = ray.origin()[axis] + (ray.direction()[axis] * tmin);
+    auto range_end = ray.origin()[axis] + (ray.direction()[axis] * tmax);
 
     auto splitting_value = node->splitting_value;
 
-    if (range_start[axis] < splitting_value && range_end[axis] < splitting_value) {
+    if (range_start < splitting_value && range_end < splitting_value) {
         return RangePlaneComparison::BelowPlane;
-    } else if (range_start[axis] >= splitting_value && range_end[axis] >= splitting_value) {
+    } else if (range_start >= splitting_value && range_end >= splitting_value) {
         return RangePlaneComparison::AbovePlane;
-    } else if (range_start[axis] < splitting_value && range_end[axis] >= splitting_value) {
+    } else if (range_start < splitting_value && range_end >= splitting_value) {
         return RangePlaneComparison::BelowToAbove;
-    } else if (range_start[axis] >= splitting_value && range_end[axis] < splitting_value) {
+    } else if (range_start >= splitting_value && range_end < splitting_value) {
         return RangePlaneComparison::AboveToBelow;
     }
 
     assert(false);
 }
-
 
 __device__ bool
 IndexedDeviceMesh::intersect(const ObjectSpaceRay &ray, Intersection &intersection) {

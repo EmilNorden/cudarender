@@ -18,6 +18,7 @@
 #include "geometry_helpers.cuh"
 #include <glm/glm.hpp>
 #include <glm/gtx/rotate_vector.hpp>
+#include <glm/gtx/norm.hpp> // for length2
 
 cudaError_t cuda();
 
@@ -144,7 +145,7 @@ template<int N>
 __device__ glm::vec3
 trace_ray(const WorldSpaceRay &ray, Scene *scene, LightPath<N> &light_path, RandomGenerator &random, int depth) {
     if (depth == 0) {
-        return glm::vec3(0, 0, 1);
+        return glm::vec3(1, 0, 1);
     }
 
     Intersection intersection;
@@ -230,7 +231,7 @@ trace_ray(const WorldSpaceRay &ray, Scene *scene, LightPath<N> &light_path, Rand
             reflected_direction = generate_unit_vector_in_cone(reflected_direction, cone_angle, random);
 
             auto reflected_ray = WorldSpaceRay{
-                    intersection_coordinate,
+                    intersection_coordinate + (reflected_direction * 0.05f),
                     reflected_direction
             };
 
@@ -242,9 +243,10 @@ trace_ray(const WorldSpaceRay &ray, Scene *scene, LightPath<N> &light_path, Rand
         glm::vec3 incoming_light{};
 
         for (auto i = 0; i < light_path.surface_count; ++i) {
+            auto light_vector = light_path.surfaces[i].world_coordinate - intersection_coordinate;
             auto shadow_ray = WorldSpaceRay{
                     intersection_coordinate + (world_space_normal * 0.1f),
-                    glm::normalize(light_path.surfaces[i].world_coordinate - intersection_coordinate)
+                    glm::normalize(light_vector)
             };
 
             Intersection shadow_intersection;
@@ -252,11 +254,12 @@ trace_ray(const WorldSpaceRay &ray, Scene *scene, LightPath<N> &light_path, Rand
             if (scene->intersect(shadow_ray, shadow_intersection, &shadow_entity)) {
                 if (shadow_entity == light_path.surfaces[i].entity) {
                     auto theta = glm::dot(shadow_ray.direction(), world_space_normal);
+                    auto inv_square_law = 1.0f / glm::length2(light_vector);
                     if (theta < 0) {
                         theta = 0;
                     }
                     if (i == 0) {
-                        incoming_light += light_path.surfaces[i].emission * theta;
+                        incoming_light += light_path.surfaces[i].emission * theta * inv_square_law;
                     } else {
                         auto brdf_light = matte_brdf(light_path.surfaces[i].incoming_direction,
                                                      shadow_ray.direction() * -1.0f,
@@ -305,7 +308,7 @@ __device__ LightPath<N> generate_light_path(Scene *scene, RandomGenerator &rando
     result.surfaces[0].incoming_emission = glm::vec3(0.0, 0.0, 0.0);
     result.surface_count = 1;
 
-    glm::vec3 path_direction = geom::random_unit_in_hemisphere(surface.world_normal, random);
+
 
     for (result.surface_count = 1; result.surface_count < N; ++result.surface_count) {
         auto &previous_surface = result.surfaces[result.surface_count - 1];
@@ -319,7 +322,7 @@ __device__ LightPath<N> generate_light_path(Scene *scene, RandomGenerator &rando
 
         }*/
 
-        // glm::vec3 path_direction = geom::random_unit_in_hemisphere(previous_surface.world_space_normal, random);
+        glm::vec3 path_direction = geom::random_unit_in_hemisphere(previous_surface.world_space_normal, random);
 
         auto path_ray = WorldSpaceRay{
                 previous_surface.world_coordinate + (path_direction * 0.1f),
@@ -401,8 +404,6 @@ __device__ LightPath<N> generate_light_path(Scene *scene, RandomGenerator &rando
         }
         current_surface.incoming_emission *= diffuse;
         current_surface.entity = entity;
-
-        path_direction = glm::reflect(path_direction, current_surface.world_space_normal);
     }
 
     return result;

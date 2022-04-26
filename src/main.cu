@@ -1,6 +1,7 @@
 #include <iostream>
 #include <cmath>
 #include <chrono>
+#include <random>
 
 #include "shader_tools/GLSLProgram.h"
 #include "shader_tools/GLSLShader.h"
@@ -152,10 +153,11 @@ void print_cuda_device_info() {
     cudaDriverGetVersion(&driver_version);
     cudaRuntimeGetVersion(&runtime_version);
 
-    printf("  CUDA Driver Version / Runtime Version          %d.%d / %d.%d\n", driver_version / 1000,
+    printf("  CUDA Driver Version / Runtime Version d.%d / %d.%d\n", driver_version / 1000,
            (driver_version % 100) / 10, runtime_version / 1000, (runtime_version % 100) / 10);
-    printf("  CUDA Capability Major/Minor version number:    %d.%d\n\n", device_properties.major,
+    printf("  CUDA Capability Major/Minor version number: %d.%d\n", device_properties.major,
            device_properties.minor);
+    printf("  SM Count: %d, Warp size: %d \n\n", device_properties.multiProcessorCount, device_properties.warpSize);
 
 }
 
@@ -230,7 +232,7 @@ void set_camera_direction(Camera *camera, float yaw, float pitch) {
 
 void
 scene_dragon(DeviceMeshLoader &mesh_loader, DeviceMaterialLoader &material_loader, DeviceTextureLoader &texture_loader,
-             std::vector<SceneEntity> &entities) {
+             std::vector<SceneEntity> &entities, std::mt19937 &rand) {
     /*auto interior = mesh_loader.load("/home/emil/models/Stockholm_interior_OBJ/Stockholm_interior.obj");
 
     entities.emplace_back(interior[0],
@@ -238,18 +240,26 @@ scene_dragon(DeviceMeshLoader &mesh_loader, DeviceMaterialLoader &material_loade
                                   .with_translation({0.0, 0.0, 0.0})
                                   .with_scale({1.0, 0.1f, 1.0f})
                                   .build());*/
-    auto paper_material = material_loader.load("/home/emil/textures/Marble012_4K-JPG/");
-    auto dragon = mesh_loader.load("/home/emil/models/stanford_dragon/dragon.obj");
-    // paper_material.set_roughness_map(nullptr);
-    paper_material.set_normal_map(nullptr);
-    dragon[0]->set_material(paper_material);
+    auto paper_material = material_loader.load("/home/emil/textures/WoodFloor043_4K-JPG/");
 
-    auto light_mesh = mesh_loader.load("/home/emil/models/crate/crate1.obj");
-    light_mesh[0]->material().set_emission(glm::vec3(1.0, 1.0, 1.0));
+    auto dragon = mesh_loader.load("/home/emil/models/woodsphere/wooden_sphere.obj");
+    dragon[0]->material().set_normal_map(nullptr);
+    dragon[0]->material().set_roughness_map(nullptr);
+    //auto dragon = mesh_loader.load("/home/emil/models/stanford_dragon/dragon.obj");
+    /*paper_material.set_roughness_map(nullptr);
+    paper_material.set_reflectivity(1.0f);
+    paper_material.set_normal_map(nullptr);*/
+
+    auto box = mesh_loader.load("/home/emil/models/crate/crate1.obj");
+    auto nvidia = material_loader.load("/home/emil/textures/nvidia/");
+    nvidia.set_uv_scale({-1, 1});
+    box[0]->set_material(nvidia);
+    auto light_mesh = mesh_loader.load("/home/emil/models/woodsphere/wooden_sphere.obj");
+    light_mesh[0]->material().set_emission(glm::vec3(1.0, 1.0, 1.0) * 120000000.0f);
     entities.emplace_back(light_mesh[0],
                           WorldTransformBuilder()
-                                  .with_translation({200.0, 1000.0, 0.0})
-                                  .with_scale({1.0, 0.1f, 1.0f})
+                                  .with_translation({10000.0, 10000.0, 0.0})
+                                  .with_uniform_scale(100)
                                   .build());
 
     auto floor_mesh = mesh_loader.load("/home/emil/models/crate/crate1.obj");
@@ -266,13 +276,28 @@ scene_dragon(DeviceMeshLoader &mesh_loader, DeviceMaterialLoader &material_loade
                     .build()
     );
 
-    entities.emplace_back(
-            dragon[0],
-            WorldTransformBuilder()
-                    .with_translation({0.0, 0.0, -300})
-                    .with_uniform_scale(20.0f)
-                    .build()
-    );
+    std::uniform_real_distribution<> dis(0.0, 1.0);
+    auto hspacing = 0.0f;
+    auto yspacing = 0.0f;
+    int count =3;
+    for (int x = 0; x < count; ++x) {
+
+        yspacing += 50.0f + dis(rand) * 60.0f;
+        hspacing = 0;
+        for (int y = 0; y < count; ++y) {
+
+            //paper_material.set_reflectivity(dis(rand));
+            //dragon[0]->set_material(paper_material);
+            hspacing += 50.0f + dis(rand) * 60.0f;
+            entities.emplace_back(
+                    dragon[0],
+                    WorldTransformBuilder()
+                            .with_translation({x * 105 + yspacing, 0.0, y * 105 + hspacing})
+                            .with_uniform_scale(15.0f)
+                            .build()
+            );
+        }
+    }
 }
 
 
@@ -313,6 +338,8 @@ scene_house(DeviceMeshLoader &mesh_loader, DeviceMaterialLoader &material_loader
 void scene_wall_lamps(DeviceMeshLoader &mesh_loader, DeviceMaterialLoader &material_loader,
                       DeviceTextureLoader &texture_loader, std::vector<SceneEntity> &entities) {
     auto wall_material = material_loader.load("/home/emil/textures/Bricks059_4K-JPG/");
+    wall_material.set_normal_map(nullptr);
+    wall_material.set_roughness_map(nullptr);
     wall_material.set_uv_scale(glm::vec2(4.0f, 4.0f));
     // auto wood_material = material_loader.load("/home/emil/textures/WoodFloor043_4K-JPG/");
     auto paper_material = material_loader.load("/home/emil/textures/Paper001_4K-JPG/");
@@ -349,14 +376,14 @@ void scene_wall_lamps(DeviceMeshLoader &mesh_loader, DeviceMaterialLoader &mater
                     .build()
     );
 
-    /*auto light_mesh = mesh_loader.load("/home/emil/models/crate/crate1.obj");
+    auto light_mesh = mesh_loader.load("/home/emil/models/crate/crate1.obj");
     light_mesh[0]->material().set_emission(glm::vec3(1.0, 1.0, 1.0));
     entities.emplace_back(light_mesh[0],
                           WorldTransformBuilder()
                                   .with_translation({200.0, 300.0, 0.0})
                                   .with_uniform_scale(2.0)
                                   .build());
-*/
+
     auto house = mesh_loader.load("/home/emil/models/house1/black_smith.obj");
     /*entities.emplace_back(
             house[0],
@@ -380,12 +407,12 @@ void scene_wall_lamps(DeviceMeshLoader &mesh_loader, DeviceMaterialLoader &mater
     );*/
 
     // Ceiling Light
-    /*entities.emplace_back(light_mesh[0],
+   /* entities.emplace_back(light_mesh[0],
                           WorldTransformBuilder()
                                   .with_translation({0.0, 960.0, 0.0})
                                   .with_scale({10.0, 0.1, 10.0})
-                                  .build());*/
-
+                                  .build());
+*/
 
     auto lamp_height = 150.0f;
     // Mesh size is 96x96x96 cm, scaled to 960x9.6x960cm
@@ -416,6 +443,7 @@ void scene_wall_lamps(DeviceMeshLoader &mesh_loader, DeviceMaterialLoader &mater
                     .with_scale({10.0, 0.1, 10.0})
                     .build()
     );
+
     for (int i = 0; i < 4; ++i) {
         entities.emplace_back(
                 wall_lamp[i],
@@ -427,6 +455,7 @@ void scene_wall_lamps(DeviceMeshLoader &mesh_loader, DeviceMaterialLoader &mater
                         .build()
         );
     }
+    /*
 
     // Back wall
     entities.emplace_back(
@@ -491,6 +520,7 @@ void scene_wall_lamps(DeviceMeshLoader &mesh_loader, DeviceMaterialLoader &mater
                         .build()
         );
     }
+    */
 }
 
 int main() {
@@ -509,7 +539,7 @@ int main() {
     float rot = 1.45f;
     //auto camera_position = glm::vec3(glm::cos(rot) * 10.0, 0.0000, glm::sin(rot) * 10.0f);
     // auto camera_position = glm::vec3(90.0, 100.0, 200.0);
-    auto camera_position = glm::vec3(0.0, 100.0, 400.0);
+    auto camera_position = glm::vec3(0.0, 100.0, 000.0);
     auto camera_direction = glm::normalize(glm::vec3(0.0, 100.0, -300.0f) - camera_position);
     camera->set_position(camera_position);
     camera->set_direction(camera_direction);
@@ -531,16 +561,19 @@ int main() {
     DeviceTextureLoader texture_loader;
     DeviceMaterialLoader material_loader{texture_loader};
     std::vector<SceneEntity> entities;
-
+    std::random_device rd;  // Will be used to obtain a seed for the random number engine
+    std::mt19937 gen(rd()); // Standard mersenne_twister_engine seeded with rd()
     // scene_wall_lamps(mesh_loader, material_loader, texture_loader, entities);
-    scene_dragon(mesh_loader, material_loader, texture_loader, entities);
+    scene_house(mesh_loader, material_loader, texture_loader, entities);// gen);
 
     Scene *scene;
     cudaMallocManaged(&scene, sizeof(Scene));
     new(scene) Scene;
     scene->build(entities);
 
-    auto sky = texture_loader.load("/home/emil/textures/sky.png");
+    //auto sky = texture_loader.load("/home/emil/textures/sky.png");
+    auto sky = texture_loader.load("/home/emil/textures/space.jpg");
+    //auto sky = texture_loader.load("/home/emil/textures/red.png");
     scene->set_sky_texture(sky);
 
     std::cout << "Creating random states..." << std::flush;
