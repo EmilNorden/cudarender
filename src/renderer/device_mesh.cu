@@ -71,11 +71,12 @@ __device__ bool hit_aabb(const ObjectSpaceRay &ray, const AABB &aabb, float &out
 }
 
 __device__ bool
-hit_triangle(const ObjectSpaceRay &ray, glm::vec3 v1, glm::vec3 v2, glm::vec3 v3, float &out_u, float &out_v,
+hit_triangle(const ObjectSpaceRay &ray, const glm::vec3 *vertices, TriangleFace &face, float &out_u, float &out_v,
              float &out_distance) {
-    // Find vectors for two edges sharing V1
-    glm::vec3 e1 = v2 - v1;
-    glm::vec3 e2 = v3 - v1;
+    auto v1 = vertices[face.i0];
+
+    glm::vec3 e1 = face.e1;
+    glm::vec3 e2 = face.e2;
 
     // Begin calculating determinant - also used to calculate u parameter
     glm::vec3 P = glm::cross(ray.direction(), e2); // m_direction.cross(e2);
@@ -238,7 +239,7 @@ intersects_mesh(const ObjectSpaceRay &ray, TreeNode *node, glm::vec3 *vertices, 
 
         float u = 0.0f;
         float v = 0.0f;
-        auto hit_result = hit_triangle(ray, v0, v1, v2, u, v, hit_distance);
+        auto hit_result = hit_triangle(ray, vertices, node->faces[i], u, v, hit_distance);
 
         if (hit_result && hit_distance < tmax) {
             tmax = hit_distance;

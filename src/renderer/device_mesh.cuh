@@ -19,6 +19,9 @@ struct TriangleFace {
     int i0;
     int i1;
     int i2;
+
+    glm::vec3 e1;
+    glm::vec3 e2;
 };
 
 class IndexedDeviceMesh {

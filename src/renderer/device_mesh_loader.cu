@@ -108,10 +108,16 @@ __host__ IndexedDeviceMesh* load_single_mesh(aiMesh* mesh, const vector<DeviceMa
                                         vertices, indices, normals, tangents,
                                         bitangents, texture_coords, material);*/
 
-    auto faces_from_indices = [](const std::vector<int>& indices) {
+    auto faces_from_indices = [](const std::vector<glm::vec3> &vertices, const std::vector<int>& indices) {
         std::vector<TriangleFace> faces;
         for(int i = 0; i < indices.size(); i += 3) {
-            faces.push_back({indices[i], indices[i+1], indices[i + 2]});
+            auto v1 = vertices[indices[i]];
+            auto v2 = vertices[indices[i+1]];
+            auto v3 = vertices[indices[i+2]];
+
+            glm::vec3 e1 = v2 - v1;
+            glm::vec3 e2 = v3 - v1;
+            faces.push_back({indices[i], indices[i+1], indices[i + 2], e1, e2});
         }
 
         return faces;
@@ -124,7 +130,7 @@ __host__ IndexedDeviceMesh* load_single_mesh(aiMesh* mesh, const vector<DeviceMa
     // TODO: An idea for later. Perhaps I can allocate space for all meshes at once, and return a single pointer to all instead of a vector of pointers
     IndexedDeviceMesh *device_mesh;
     cuda_assert(cudaMallocManaged(&device_mesh, sizeof(IndexedDeviceMesh)));
-    new(device_mesh) IndexedDeviceMesh{vertices, normals, tangents, bitangents, faces_from_indices(indices), texture_coords, material};
+    new(device_mesh) IndexedDeviceMesh{vertices, normals, tangents, bitangents, faces_from_indices(vertices, indices), texture_coords, material};
 
     cout << "    Bounds: " << device_mesh->bounds();
     return device_mesh;
