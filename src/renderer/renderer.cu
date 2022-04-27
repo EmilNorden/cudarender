@@ -2,16 +2,12 @@
 // Created by emil on 2021-05-09.
 //
 
-#include "coordinates.cuh"
 #include "renderer.cuh"
 #include "camera.cuh"
 #include "scene.cuh"
 
-#include "cuda_runtime.h"
 #include "cuda_utils.cuh"
 #include <GL/glew.h>
-#include <stdlib.h>
-#include <stdio.h>
 #include <cuda_gl_interop.h>
 #include "device_random.cuh"
 #include "transform.cuh"
@@ -19,77 +15,6 @@
 #include <glm/glm.hpp>
 #include <glm/gtx/rotate_vector.hpp>
 #include <glm/gtx/norm.hpp> // for length2
-
-cudaError_t cuda();
-
-__global__ void kernel() {
-
-}
-
-// clamp x to range [a, b]
-__device__ float clamp(float x, float a, float b) {
-    return max(a, min(b, x));
-}
-
-__device__ int clamp(int x, int a, int b) {
-    return max(a, min(b, x));
-}
-
-// convert floating point rgb color to 8-bit integer
-__device__ int rgbToInt(float r, float g, float b) {
-    r = clamp(r, 0.0f, 1.0f) * 255;
-    g = clamp(g, 0.0f, 1.0f) * 255;
-    b = clamp(b, 0.0f, 1.0f) * 255;
-    return (int(255) << 24) | (int(b) << 16) | (int(g) << 8) | int(r);
-}
-
-// convert 8-bit integer to floating point rgb color
-__device__ glm::vec3 int_to_rgb(int color) {
-    auto r = static_cast<float>(color & 0xFF) / 255.0f;
-    auto g = static_cast<float>((color & 0xFF00) >> 8) / 255.0f;
-    auto b = static_cast<float>((color & 0xFF0000) >> 16) / 255.0f;
-
-    return glm::vec3(r, g, b);
-}
-
-__device__ bool hit_sphere(const WorldSpaceRay &ray) {
-    auto radius = 2.0f;
-    auto position = glm::vec3(0.0, 0.0, 10.0);
-
-    auto squared_radius = radius * radius;
-    auto L = position - ray.origin();
-    auto tca = glm::dot(L, ray.direction());
-
-    auto d2 = glm::dot(L, L) - tca * tca;
-
-    if (d2 > squared_radius) {
-        return false;
-    }
-
-    auto thc = glm::sqrt(squared_radius - d2);
-    auto t0 = tca - thc;
-    auto t1 = tca + thc;
-
-    if (t0 > t1) {
-        auto temp = t0;
-        t0 = t1;
-        t1 = temp;
-    }
-
-    if (t0 < 0.0) {
-        t0 = t1;
-        if (t0 < 0.0) {
-            return false;
-        }
-    }
-
-    return true;
-}
-
-template<typename T>
-__device__ T lerp(const T &a, const T &b, float factor) {
-    return a * (1.0f - factor) + b * factor;
-}
 
 struct EmissiveSurface {
     // incoming emission
