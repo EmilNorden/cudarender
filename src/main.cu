@@ -242,13 +242,11 @@ scene_dragon(DeviceMeshLoader &mesh_loader, DeviceMaterialLoader &material_loade
                                   .build());*/
     auto paper_material = material_loader.load("/home/emil/textures/WoodFloor043_4K-JPG/");
 
-    auto dragon = mesh_loader.load("/home/emil/models/woodsphere/wooden_sphere.obj");
-    dragon[0]->material().set_normal_map(nullptr);
-    dragon[0]->material().set_roughness_map(nullptr);
-    //auto dragon = mesh_loader.load("/home/emil/models/stanford_dragon/dragon.obj");
-    /*paper_material.set_roughness_map(nullptr);
+    auto dragon = mesh_loader.load("/home/emil/models/stanford_dragon/dragon.obj");
+    paper_material.set_roughness_map(nullptr);
     paper_material.set_reflectivity(1.0f);
-    paper_material.set_normal_map(nullptr);*/
+    paper_material.set_normal_map(nullptr);
+    dragon[0]->set_material(paper_material);
 
     auto box = mesh_loader.load("/home/emil/models/crate/crate1.obj");
     auto nvidia = material_loader.load("/home/emil/textures/nvidia/");
@@ -275,8 +273,15 @@ scene_dragon(DeviceMeshLoader &mesh_loader, DeviceMaterialLoader &material_loade
                     .with_scale({100.0, 0.1, 100.0})
                     .build()
     );
+    entities.emplace_back(
+            dragon[0],
+            WorldTransformBuilder()
+                    .with_translation({0, 0.0, 0})
+                    .with_uniform_scale(15.0f)
+                    .build()
+    );
 
-    std::uniform_real_distribution<> dis(0.0, 1.0);
+    /*std::uniform_real_distribution<> dis(0.0, 1.0);
     auto hspacing = 0.0f;
     auto yspacing = 0.0f;
     int count =3;
@@ -297,7 +302,7 @@ scene_dragon(DeviceMeshLoader &mesh_loader, DeviceMaterialLoader &material_loade
                             .build()
             );
         }
-    }
+    }*/
 }
 
 
@@ -305,11 +310,11 @@ void
 scene_house(DeviceMeshLoader &mesh_loader, DeviceMaterialLoader &material_loader, DeviceTextureLoader &texture_loader,
             std::vector<SceneEntity> &entities) {
     auto light_mesh = mesh_loader.load("/home/emil/models/crate/crate1.obj");
-    light_mesh[0]->material().set_emission(glm::vec3(1.0, 1.0, 1.0));
+    light_mesh[0]->material().set_emission(glm::vec3(1.0, 1.0, 1.0) * 90000.0f);
     entities.emplace_back(light_mesh[0],
                           WorldTransformBuilder()
-                                  .with_translation({200.0, 3000.0, 0.0})
-                                  .with_scale({1000.0, 0.1f, 1000.0f})
+                                  .with_translation({0.0, 500.0, 0.0})
+                                  .with_scale({1.0f, 1.0f, 1.0f})
                                   .build());
 
     auto house = mesh_loader.load("/home/emil/models/house1/black_smith.obj");
@@ -523,10 +528,31 @@ void scene_wall_lamps(DeviceMeshLoader &mesh_loader, DeviceMaterialLoader &mater
     */
 }
 
+size_t sample = 0;
+Scene *scene;
+DeviceTextureLoader texture_loader;
+void drop_callback(GLFWwindow* window, int count, const char** paths)
+{
+    double x, y;
+    glfwGetCursorPos(window, &x, &y);
+    for (auto i = 0;  i < count;  i++) {
+        if(DeviceTextureLoader::file_is_supported(paths[i])) {
+            auto texture = texture_loader.load(paths[i]);
+            if(texture) {
+                scene->set_sky_texture(texture);
+                sample = 0;
+            }
+        }
+    }
+}
+
 int main() {
     init_glfw();
 
     GlWindow window{"Hello, world!", WIDTH, HEIGHT, keyboard_func};
+
+    glfwSetDropCallback(window.handle(), drop_callback);
+
 
     init_gl_buffers();
 
@@ -558,21 +584,21 @@ int main() {
     glfwPollEvents();
     glfwPollEvents();
 
-    DeviceTextureLoader texture_loader;
     DeviceMaterialLoader material_loader{texture_loader};
     std::vector<SceneEntity> entities;
     std::random_device rd;  // Will be used to obtain a seed for the random number engine
     std::mt19937 gen(rd()); // Standard mersenne_twister_engine seeded with rd()
     // scene_wall_lamps(mesh_loader, material_loader, texture_loader, entities);
-    scene_house(mesh_loader, material_loader, texture_loader, entities);// gen);
+    // scene_house(mesh_loader, material_loader, texture_loader, entities);// gen);
+    scene_dragon(mesh_loader, material_loader, texture_loader, entities, gen);
 
-    Scene *scene;
+
     cudaMallocManaged(&scene, sizeof(Scene));
     new(scene) Scene;
     scene->build(entities);
 
     //auto sky = texture_loader.load("/home/emil/textures/sky.png");
-    auto sky = texture_loader.load("/home/emil/textures/space.jpg");
+    auto sky = texture_loader.load("/home/emil/textures/sunset.jpg");
     //auto sky = texture_loader.load("/home/emil/textures/red.png");
     scene->set_sky_texture(sky);
 
@@ -583,7 +609,6 @@ int main() {
     double total_duration = 0.0f;
     double max_duration = 0.0f;
     int frame_counter = 0;
-    size_t sample = 0;
 
     glfwSetInputMode(window.handle(), GLFW_RAW_MOUSE_MOTION, GLFW_TRUE);
     glfwSetMouseButtonCallback(window.handle(), mouse_button_callback);

@@ -145,7 +145,7 @@ template<int N>
 __device__ glm::vec3
 trace_ray(const WorldSpaceRay &ray, Scene *scene, LightPath<N> &light_path, RandomGenerator &random, int depth) {
     if (depth == 0) {
-        return glm::vec3(1, 0, 1);
+        return glm::vec3(1, 1, 0);
     }
 
     Intersection intersection;
@@ -412,7 +412,7 @@ __device__ LightPath<N> generate_light_path(Scene *scene, RandomGenerator &rando
 __global__ void
 cudaRender(float *g_odata, Camera *camera, Scene *scene, RandomGeneratorPool *random_pool, int width, int height,
            size_t sample) {
-    constexpr int PathLength = 2;
+    constexpr int PathLength = 1;
 
     int tx = threadIdx.x;
     int ty = threadIdx.y;
@@ -433,7 +433,7 @@ cudaRender(float *g_odata, Camera *camera, Scene *scene, RandomGeneratorPool *ra
 
         auto light_path = generate_light_path<PathLength>(scene, random);
 
-        auto color = trace_ray<PathLength>(ray, scene, light_path, random, 3);
+        auto color = trace_ray<PathLength>(ray, scene, light_path, random, 2);
 
         color = glm::clamp(color, {0, 0, 0}, {1, 1, 1});
 

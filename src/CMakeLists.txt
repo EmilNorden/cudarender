@@ -108,4 +108,6 @@ target_compile_options(renderer PRIVATE $<$<COMPILE_LANGUAGE:CUDA>:
         --generate-line-info
         --use_fast_math
         --relocatable-device-code=true
+        -arch=compute_86
+        -code=sm_86
         >)
