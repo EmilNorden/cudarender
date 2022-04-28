@@ -113,8 +113,13 @@ trace_ray(const WorldSpaceRay &ray, Scene *scene, LightPath<N> &light_path, Rand
 
         auto world_space_normal = entity->transpose_inverse_world().transform_normal(object_space_normal);
 
-        auto diffuse_color = material.sample_diffuse(texture_uv);
+        glm::vec3 roughness{};
+        if (material.has_roughness_map()) {
+            roughness = glm::vec3(1.0) - material.sample_roughness(texture_uv);
+        }
 
+        glm::vec3 refracted_color{};
+        auto diffuse_color = material.sample_diffuse(texture_uv);
         if (material.translucence() > 0) {
             auto theta = glm::dot(ray.direction(), world_space_normal);
             auto next_refractive_index = 1.0f;
@@ -129,7 +134,13 @@ trace_ray(const WorldSpaceRay &ray, Scene *scene, LightPath<N> &light_path, Rand
                 next_refractive_index = 1.333f; // TODO: MAterial should give refractive index
             }
 
+            if(from_refractive_index == next_refractive_index) {
+                //printf("theta: %f, refr idx: %f, ray dir: %f %f %f, N: %f %f %f \n", theta, from_refractive_index, ray.direction().x, ray.direction().y, ray.direction().z, world_space_normal.x, world_space_normal.y, world_space_normal.z);
+            }
+
             auto refracted_direction = glm::refract(ray.direction(), refraction_normal, from_refractive_index / next_refractive_index);
+            auto cone_angle = roughness.x * glm::half_pi<float>();
+            refracted_direction = generate_unit_vector_in_cone(refracted_direction, cone_angle, random);
 
             auto refracted_ray = WorldSpaceRay{
                     intersection_coordinate + (refracted_direction * 0.1f),
@@ -137,16 +148,14 @@ trace_ray(const WorldSpaceRay &ray, Scene *scene, LightPath<N> &light_path, Rand
                     next_refractive_index
             };
 
-            auto refracted_color = trace_ray<N>(refracted_ray, scene, light_path, random, depth - 1);
-            diffuse_color = refracted_color * material.translucence();
+            refracted_color = trace_ray<N>(refracted_ray, scene, light_path, random, depth - 1) * material.translucence();
         }
 
         // auto reflectivity = material.reflectivity();
         // glm::vec3 reflectivityX;
         glm::vec3 reflectivity(material.reflectivity());
         if (material.has_roughness_map()) {
-            reflectivity += glm::vec3(1.0) - material.sample_roughness(texture_uv);
-            // reflectivity += 1.0f - material.sample_roughness(texture_uv).x;
+            reflectivity += glm::vec3(1.0) - roughness;
         }
 
         if (reflectivity.x > 0 || reflectivity.y > 0 || reflectivity.z > 0) {
@@ -199,7 +208,7 @@ trace_ray(const WorldSpaceRay &ray, Scene *scene, LightPath<N> &light_path, Rand
             }
         }
 
-        return material.emission() + (incoming_light * diffuse_color);
+        return material.emission() + (incoming_light * diffuse_color) + refracted_color;
         // return material.emission() + (incoming_light * lerp(diffuse_color, reflected_color, material.reflectivity()));
     } else {
         if(scene->sky_texture() == nullptr) {
@@ -358,7 +367,7 @@ cudaRender(float *g_odata, Camera *camera, Scene *scene, RandomGeneratorPool *ra
 
         auto light_path = generate_light_path<PathLength>(scene, random);
 
-        auto color = trace_ray<PathLength>(ray, scene, light_path, random, 2);
+        auto color = trace_ray<PathLength>(ray, scene, light_path, random, 3);
 
         color = glm::clamp(color, {0, 0, 0}, {1, 1, 1});
 
