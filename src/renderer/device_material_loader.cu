@@ -22,7 +22,7 @@ vector <fs::path> get_image_files(std::string_view directory) {
 }
 
 template<typename T>
-void foo(const vector<fs::path>& files, vector<fs::path> &out_files, T word) {
+void filter_files_by_filename(const vector<fs::path>& files, vector<fs::path> &out_files, T word) {
     string uppercase_word = word;
     std::transform(uppercase_word.begin(), uppercase_word.end(), uppercase_word.begin(),
                    [](unsigned char c) { return std::toupper(c); });
@@ -42,12 +42,12 @@ void foo(const vector<fs::path>& files, vector<fs::path> &out_files, T word) {
 
 template<typename T>
 void get_filenames_containing_words(const vector <fs::path> &files, vector<fs::path> &out_files, T word) {
-    foo(files, out_files, word);
+    filter_files_by_filename(files, out_files, word);
 }
 
 template<typename T, typename... Args>
 void get_filenames_containing_words(const vector <fs::path> &files, vector<fs::path> &out_files, T word, Args... word_list) {
-    foo(files, out_files, word);
+    filter_files_by_filename(files, out_files, word);
 
     get_filenames_containing_words(files, out_files, word_list...);
 

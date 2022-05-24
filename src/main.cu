@@ -45,28 +45,6 @@ GLuint opengl_tex_cuda;
 #define WIDTH   1024
 #define HEIGHT  512
 
-#if defined(RENDER_DEBUG)
-#define DEBUG_ASSERT_SDL_PTR(x) {                                   \
-                                    if(!(x)) {                      \
-                                        std::cerr                   \
-                                            << "SDL call failed: "  \
-                                            << SDL_GetError()       \
-                                        exit(1);                    \
-                                    }                               \
-                                }
-#else
-#define DEBUG_ASSERT_SDL_PTR(x)
-#endif
-
-__global__
-void add(int n, float *x, float *y) {
-    int index = blockIdx.x * blockDim.x + threadIdx.x;
-    int stride = blockDim.x * gridDim.x;
-    for (int i = index; i < n; i += stride) {
-        y[i] = x[i] + y[i];
-    }
-}
-
 
 void keyboard_func(GLFWwindow *window, int key, int scancode, int action, int mods) {}
 
@@ -153,21 +131,12 @@ void print_cuda_device_info() {
     cudaDriverGetVersion(&driver_version);
     cudaRuntimeGetVersion(&runtime_version);
 
-    printf("  CUDA Driver Version / Runtime Version d.%d / %d.%d\n", driver_version / 1000,
+    printf("  CUDA Driver Version / Runtime Version %d.%d / %d.%d\n", driver_version / 1000,
            (driver_version % 100) / 10, runtime_version / 1000, (runtime_version % 100) / 10);
     printf("  CUDA Capability Major/Minor version number: %d.%d\n", device_properties.major,
            device_properties.minor);
     printf("  SM Count: %d, Warp size: %d \n\n", device_properties.multiProcessorCount, device_properties.warpSize);
 
-}
-
-std::vector<TriangleFace> faces_from_indices(const std::vector<int> &indices) {
-    std::vector<TriangleFace> faces;
-    for (int i = 0; i < indices.size(); i += 3) {
-        faces.push_back({indices[i], indices[i + 1], indices[i + 2]});
-    }
-
-    return faces;
 }
 
 void handle_input(GLFWwindow *window, Camera *camera, Scene *scene) {
