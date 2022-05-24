@@ -50,6 +50,11 @@ find_package(glfw3 REQUIRED)
 find_package(assimp REQUIRED)
 find_package(FreeImage REQUIRED)
 
+set(OptiX_INSTALL_DIR /home/emil/NVIDIA-OptiX-SDK-7.4.0-linux64-x86_64)
+message(STATUS "hellosss ${OptiX_INSTALL_DIR}")
+
+find_package(OptiX REQUIRED)
+
 ### RENDERER
 
 target_include_directories(renderer SYSTEM PRIVATE
