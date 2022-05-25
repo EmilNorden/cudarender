@@ -156,6 +156,7 @@ trace_ray(const WorldSpaceRay &ray, Scene *scene, LightPath<N> &light_path, Rand
         glm::vec3 reflectivity(material.reflectivity());
         if (material.has_roughness_map()) {
             reflectivity += glm::vec3(1.0) - roughness;
+            reflectivity = glm::clamp(reflectivity, glm::vec3(0), glm::vec3(1));
         }
 
         if (reflectivity.x > 0 || reflectivity.y > 0 || reflectivity.z > 0) {
@@ -169,9 +170,9 @@ trace_ray(const WorldSpaceRay &ray, Scene *scene, LightPath<N> &light_path, Rand
                     reflected_direction
             };
 
-            auto reflected_color = trace_ray<N>(reflected_ray, scene, light_path, random, depth - 1);
+            auto reflected_color = trace_ray<N>(reflected_ray, scene, light_path, random, depth - 1) * reflectivity;
             // diffuse_color = lerp(diffuse_color, reflected_color, reflectivity);
-            diffuse_color += reflected_color * (reflectivity);
+            diffuse_color += reflected_color;
         }
 
         glm::vec3 incoming_light{};
@@ -348,12 +349,12 @@ cudaRender(float *g_odata, Camera *camera, Scene *scene, RandomGeneratorPool *ra
            size_t sample) {
     constexpr int PathLength = 1;
 
-    int tx = threadIdx.x;
-    int ty = threadIdx.y;
-    int bw = blockDim.x;
-    int bh = blockDim.y;
-    int x = blockIdx.x * bw + tx;
-    int y = blockIdx.y * bh + ty;
+    auto tx = threadIdx.x;
+    auto ty = threadIdx.y;
+    auto bw = blockDim.x;
+    auto bh = blockDim.y;
+    auto x = blockIdx.x * bw + tx;
+    auto y = blockIdx.y * bh + ty;
 
     auto threads_per_block = bw * bh;
     auto thread_num_in_block = tx + bw * ty;
@@ -384,16 +385,14 @@ cudaRender(float *g_odata, Camera *camera, Scene *scene, RandomGeneratorPool *ra
 void Renderer::render(Camera *camera, Scene *scene, RandomGeneratorPool *random, int width, int height, size_t sample) {
     dim3 block(16, 16, 1);
     dim3 grid(std::ceil(width / (float) block.x), std::ceil(height / (float) block.y), 1);
-    cudaRender<<<grid, block, 0>>>((float *) m_cuda_render_buffer, camera, scene, random, width, height, sample);
+    cudaRender<<<grid, block>>>((float *) m_cuda_render_buffer, camera, scene, random, width, height, sample);
 
     cudaArray *texture_ptr;
     cuda_assert(cudaGraphicsMapResources(1, &m_cuda_tex_resource, 0));
     cuda_assert(cudaGraphicsSubResourceGetMappedArray(&texture_ptr, m_cuda_tex_resource, 0, 0));
 
     // TODO: Havent we already calculated this?
-    int num_texels = width * height;
-    int num_values = num_texels * 4;
-    int size_tex_data = sizeof(GLfloat) * num_values;
+    auto size_tex_data = sizeof(GLfloat) * width * height * 4;
     cuda_assert(cudaMemcpyToArray(texture_ptr, 0, 0, m_cuda_render_buffer, size_tex_data, cudaMemcpyDeviceToDevice));
     cuda_assert(cudaGraphicsUnmapResources(1, &m_cuda_tex_resource, 0));
 }
