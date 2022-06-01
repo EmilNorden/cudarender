@@ -12,9 +12,9 @@ DeviceTexture::DeviceTexture(const std::vector<uint8_t> &pixels, size_t width, s
     transfer_vector_to_device_memory(float_pixels, &m_data);
 }
 
-__device__ glm::vec3 get_color_at(float *data, int x, int y, size_t width, size_t height) {
-    x = x % width;
-    y = y % height;
+__device__ glm::vec3 get_color_at(float *data, size_t x, size_t y, size_t width, size_t height) {
+    x = x & (width - 1);
+    y = y & (height - 1);
     auto index = (y * width * 3) + (x * 3);
     return {
             data[index],
@@ -24,8 +24,8 @@ __device__ glm::vec3 get_color_at(float *data, int x, int y, size_t width, size_
 }
 
 __device__ glm::vec3 DeviceTexture::sample(const glm::vec2 &uv) const {
-    int x = uv.x * (m_width - 1);
-    int y = uv.y * (m_height - 1);
+    auto x = static_cast<size_t>(uv.x * (m_width - 1));
+    auto y = static_cast<size_t>(uv.y * (m_height - 1));
 
     return get_color_at(m_data, x, y, m_width, m_height);
 }

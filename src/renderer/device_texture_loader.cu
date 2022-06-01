@@ -9,6 +9,10 @@
 
 using namespace std;
 
+bool is_power_of_two(size_t n) {
+    return (n & (n - 1)) == 0;
+}
+
 DeviceTexture *DeviceTextureLoader::load(const std::string &path) {
     cout << "Loading texture " << path << endl;
     if(!filesystem::exists(path)) {
@@ -31,6 +35,13 @@ DeviceTexture *DeviceTextureLoader::load(const std::string &path) {
     auto width = FreeImage_GetWidth(bitmap);
     auto height = FreeImage_GetHeight(bitmap);
     auto bpp = FreeImage_GetBPP(bitmap);
+
+    if( !is_power_of_two(width) ||
+        !is_power_of_two(height)) {
+        cerr << "All textures must be power of 2!" << endl;
+        exit(1);
+    }
+
     if(bpp != 24) {
         auto new_bitmap = FreeImage_ConvertTo24Bits(bitmap);
         FreeImage_Unload(bitmap);
