@@ -22,6 +22,8 @@ public:
     [[nodiscard]] bool should_close();
 
     [[nodiscard]] GLFWwindow *handle() { return m_window; } // TODO: Same as above, leaking glfw too much
+
+    void toggle_fullscreen();
 private:
     GLuint VBO, VAO, EBO;
     GLFWwindow *m_window;
@@ -30,6 +32,7 @@ private:
     GLSLProgram shdrawtex; // GLSLS program for textured draw
     int m_width;
     int m_height;
+    bool m_is_fullscreen;
 };
 
 

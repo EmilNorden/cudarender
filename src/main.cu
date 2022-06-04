@@ -135,12 +135,12 @@ void print_cuda_device_info() {
            (driver_version % 100) / 10, runtime_version / 1000, (runtime_version % 100) / 10);
     printf("  CUDA Capability Major/Minor version number: %d.%d\n", device_properties.major,
            device_properties.minor);
-    printf("  SM Count: %d, Warp size: %d \n\n", device_properties.multiProcessorCount, device_properties.warpSize);
+    printf("  SM Count: %d, Warp size: %d, Shared mem/block %zu \n\n", device_properties.multiProcessorCount, device_properties.warpSize, device_properties.sharedMemPerBlock);
 
 }
 
-void handle_input(GLFWwindow *window, Camera *camera, Scene *scene) {
-
+void handle_input(GlWindow &gl_window, Camera *camera, Scene *scene) {
+    auto window = gl_window.handle();
     auto speed = 3.0f;
     if (glfwGetKey(window, GLFW_KEY_W)) {
         camera->set_position(camera->position() + camera->direction() * speed);
@@ -164,6 +164,9 @@ void handle_input(GLFWwindow *window, Camera *camera, Scene *scene) {
     }
     if (glfwGetKey(window, GLFW_KEY_SPACE)) {
         device_autofocus(camera, scene, WIDTH, HEIGHT);
+    }
+    if(glfwGetKey(window, GLFW_KEY_F12)) {
+        gl_window.toggle_fullscreen();
     }
 }
 
@@ -218,10 +221,10 @@ scene_dragon(DeviceMeshLoader &mesh_loader, DeviceMaterialLoader &material_loade
     //paper_material.set_emission(glm::vec3(1,1,1) * 10000.0f);
     dragon[0]->set_material(paper_material);
 
-    auto box = mesh_loader.load("/home/emil/models/crate/crate1.obj");
-    auto nvidia = material_loader.load("/home/emil/textures/nvidia/");
-    nvidia.set_uv_scale({-1, 1});
-    box[0]->set_material(nvidia);
+    //auto box = mesh_loader.load("/home/emil/models/crate/crate1.obj");
+    //auto nvidia = material_loader.load("/home/emil/textures/nvidia/");
+    //nvidia.set_uv_scale({-1, 1});
+    //box[0]->set_material(nvidia);
     auto light_mesh = mesh_loader.load("/home/emil/models/woodsphere/wooden_sphere.obj");
 
     light_mesh[0]->material().set_emission(glm::vec3(1.0, 1.0, 1.0) * 120000000.0f);
@@ -541,7 +544,9 @@ void drop_callback(GLFWwindow* window, int count, const char** paths)
 
 int main() {
     init_glfw();
-
+    std::cout << "size is: " << (sizeof(glm::vec3) * 4096 * 4096) / (1024*1024) << std::endl;
+    std::cout << "size is: " << (sizeof(uint8_t) * 4096 * 4096) / (1024*1024) << std::endl;
+    //return 1;
     GlWindow window{"CUDA Raytracer", WIDTH, HEIGHT, keyboard_func};
 
     glfwSetDropCallback(window.handle(), drop_callback);
@@ -591,7 +596,7 @@ int main() {
     scene->build(entities);
 
     //auto sky = texture_loader.load("/home/emil/textures/sky.png");
-    auto sky = texture_loader.load("/home/emil/textures/sunset.jpg");
+    auto sky = texture_loader.load("/home/emil/textures/sunset2.jpg");
     //auto sky = texture_loader.load("/home/emil/textures/red.png");
     scene->set_sky_texture(sky);
 
@@ -615,7 +620,7 @@ int main() {
     set_camera_direction(camera, yaw, pitch);
     device_autofocus(camera, scene, WIDTH, HEIGHT);
     while (run && !window.should_close()) {
-        handle_input(window.handle(), camera, scene);
+        handle_input(window, camera, scene);
 
         if (glfwGetKey(window.handle(), GLFW_KEY_ESCAPE)) {
             run = false;

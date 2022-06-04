@@ -51,9 +51,31 @@ static GLuint indices[] = {  // Note that we start from 0!
         1, 2, 3   // Second Triangle
 };
 
+void window_resized(GLFWwindow* window, int width, int height) {
+    std::cout << "setting viewport: " << width << ", " << height << std::endl;
+    glViewport(0, 0, width, height);
+}
+
+void GlWindow::toggle_fullscreen() {
+    m_is_fullscreen = !m_is_fullscreen;
+    if(m_is_fullscreen) {
+        auto monitor = glfwGetPrimaryMonitor();
+        int w, h;
+        glfwGetMonitorPhysicalSize(monitor, &w, &h);
+        glfwSetWindowMonitor(m_window,
+                             monitor,
+                             0, 0, w, h, GLFW_DONT_CARE);
+    }
+    else {
+        glfwSetWindowMonitor(m_window,
+                             nullptr,
+                             0, 0, m_width, m_height, GLFW_DONT_CARE);
+    }
+
+}
 
 GlWindow::GlWindow(const std::string& title, int width, int height, GLFWkeyfun key_callback)
-    : m_window(nullptr), m_width(width), m_height(height) {
+    : m_window(nullptr), m_width(width), m_height(height), m_is_fullscreen(false) {
 
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
@@ -64,6 +86,8 @@ GlWindow::GlWindow(const std::string& title, int width, int height, GLFWkeyfun k
     if(!m_window) {
         throw std::runtime_error("Unable to create window!");
     }
+
+    glfwSetFramebufferSizeCallback(m_window, window_resized);
 
     // Not sure the constructor should be doing this
     glfwMakeContextCurrent(m_window);
